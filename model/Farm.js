@@ -67,7 +67,18 @@ export default class Farm {
         } catch (error) {
             // 404 表示账号未运行，直接启动
             if (error.message?.includes('HTTP 404')) {
-                await Api.startAccount(account.id)
+                try {
+                    await Api.startAccount(account.id)
+                } catch (startError) {
+                    // 启动失败，可能是code过期或网络问题
+                    if (startError.message?.includes('HTTP 500')) {
+                        throw new Error('启动失败，登录码可能已过期，请使用"#退出农场"后重新登录')
+                    }
+                    throw startError
+                }
+            } else if (error.message?.includes('HTTP 500')) {
+                // 500 错误通常是启动失败
+                throw new Error('启动失败，登录码可能已过期，请使用"#退出农场"后重新登录')
             } else {
                 throw error
             }
