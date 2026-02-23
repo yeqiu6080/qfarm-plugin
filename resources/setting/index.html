@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="preload" href="{{_res_path}}common/font/FZB.woff" as="font">
+  <link rel="stylesheet" type="text/css" href="{{_res_path}}common/common.css" />
+  <title>QQ农场插件设置</title>
+  <style>
+    .container {
+      background: url("{{_res_path}}setting/imgs/bg.jpg") center;
+      background-size: cover;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 2px solid rgba(255,255,255,0.2);
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 28px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      margin: 0;
+    }
+    .header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      margin: 10px 0 0 0;
+    }
+    .section {
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .section-title {
+      font-size: 16px;
+      color: #ffd700;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+    .setting-label {
+      font-size: 14px;
+      color: #fff;
+    }
+    .setting-value {
+      font-size: 14px;
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.2);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+    .status-box {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+    }
+    .status-icon {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .status-online {
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+    }
+    .status-offline {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .status-text {
+      font-size: 14px;
+      color: #fff;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .info-item {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .info-value {
+      font-size: 24px;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    .info-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    .footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ 插件设置</h1>
+      <p>QQ农场插件配置信息</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔌 服务器状态</div>
+      <div class="status-box">
+        <div class="status-icon {{serverOnline ? 'status-online' : 'status-offline'}}"></div>
+        <div class="status-text">{{serverOnline ? '在线' : '离线'}}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📊 统计信息</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-value">{{totalAccounts}}</div>
+          <div class="info-label">总账号数</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{runningAccounts}}</div>
+          <div class="info-label">运行中</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{totalHarvests}}</div>
+          <div class="info-label">总收获</div>
+        </div>
+        <div class="info-item">
+          <div class="info-value">{{totalSteals}}</div>
+          <div class="info-label">总偷取</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">⚙️ 配置信息</div>
+      <div class="setting-item">
+        <span class="setting-label">服务器地址</span>
+        <span class="setting-value">{{serverUrl}}</span>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">插件版本</span>
+        <span class="setting-value">{{version}}</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      {{@sys.copyright}}
+    </div>
+  </div>
+</body>
+</html>

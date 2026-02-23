@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="shortcut icon" href="#" />
+  <title>QQ农场插件</title>
+  {{block 'css'}}{{/block}}
+</head>
+
+<body class="{{bodyClass||''}}" {{@sys.scale}}>
+  <div class="container" id="container">
+    {{block 'main'}}{{/block}}
+    <div class="copyright">{{@sys.copyright}}</div>
+  </div>
+</body>
+
+</html>

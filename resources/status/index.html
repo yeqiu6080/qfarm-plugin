@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>QQ农场状态</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    /* 顶部应用栏 */
+    .app-bar {
+      background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+      padding: 24px;
+      color: white;
+      position: relative;
+    }
+    
+    .app-bar-title {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .app-bar-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .status-chip {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+    }
+    
+    .status-dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    
+    /* 用户信息卡片 */
+    .user-card {
+      margin: -20px 16px 16px;
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      position: relative;
+      z-index: 1;
+    }
+    
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 4px 12px rgba(76,175,80,0.3);
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .user-name {
+      font-size: 20px;
+      font-weight: 500;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+    
+    .user-level {
+      font-size: 14px;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .level-badge {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    
+    /* 金币显示 */
+    .gold-section {
+      background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .gold-label {
+      font-size: 14px;
+      color: #795548;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .gold-icon {
+      font-size: 20px;
+    }
+    
+    .gold-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #F57C00;
+    }
+    
+    /* 统计网格 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 0 16px 16px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+    
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    
+    .stat-icon.harvest {
+      background: #E8F5E9;
+    }
+    
+    .stat-icon.steal {
+      background: #FFEBEE;
+    }
+    
+    .stat-icon.auto {
+      background: #E3F2FD;
+    }
+    
+    .stat-icon.time {
+      background: #F3E5F5;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    
+    /* 底部信息 */
+    .footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      border-top: 1px solid rgba(0,0,0,0.04);
+    }
+    
+    /* 未登录状态 */
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+    }
+    
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .empty-text {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    
+    .empty-hint {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {{if isLoggedIn}}
+    <!-- 已登录状态 -->
+    <div class="app-bar">
+      <div class="app-bar-title">🌾 QQ农场</div>
+      <div class="app-bar-subtitle">共享版管理插件</div>
+      <div class="status-chip">
+        <div class="status-dot {{isRunning ? '' : 'offline'}}"></div>
+        {{isRunning ? '运行中' : '已停止'}}
+      </div>
+    </div>
+    
+    <div class="user-card">
+      <div class="user-header">
+        <div class="avatar">👤</div>
+        <div class="user-info">
+          <div class="user-name">{{userName}}</div>
+          <div class="user-level">
+            <span class="level-badge">Lv.{{level}}</span>
+            <span>{{isConnected ? '🟢 在线' : '🔴 离线'}}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="gold-section">
+        <div class="gold-label">
+          <span class="gold-icon">💰</span>
+          <span>金币</span>
+        </div>
+        <div class="gold-value">{{gold}}</div>
+      </div>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon harvest">🌾</div>
+        <div class="stat-value">{{harvests}}</div>
+        <div class="stat-label">收获次数</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon steal">🤏</div>
+        <div class="stat-value">{{steals}}</div>
+        <div class="stat-label">偷取次数</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon auto">⚙️</div>
+        <div class="stat-value">{{autoEnabled ? 'ON' : 'OFF'}}</div>
+        <div class="stat-label">自动挂机</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon time">⏱️</div>
+        <div class="stat-value">{{accountAge}}天</div>
+        <div class="stat-label">绑定时长</div>
+      </div>
+    </div>
+    {{else}}
+    <!-- 未登录状态 -->
+    <div class="app-bar">
+      <div class="app-bar-title">🌾 QQ农场</div>
+      <div class="app-bar-subtitle">共享版管理插件</div>
+    </div>
+    
+    <div class="empty-state">
+      <div class="empty-icon">🌱</div>
+      <div class="empty-text">尚未绑定农场账号</div>
+      <div class="empty-hint">使用 #登录农场 开始体验</div>
+    </div>
+    {{/if}}
+    
+    <div class="footer">
+      Yunzai-Bot & QQ农场插件 v{{version}}
+    </div>
+  </div>
+</body>
+</html>

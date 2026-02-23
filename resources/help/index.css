@@ -1,0 +1,137 @@
+.help-title {
+  background-image: linear-gradient(180deg, #4a4a6f, #202540);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root {
+  --table-color: #5a4a48;
+}
+
+body {
+  width: 1130px;
+  min-height: 100vh;
+}
+
+.container {
+  padding: 30px 40px;
+  width: 1130px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.head-box {
+  margin: 20px 0 30px 0;
+  padding-bottom: 0;
+}
+
+.head-box .title {
+  font-size: 48px;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  font-weight: bold;
+}
+
+.head-box .label {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  font-size: 18px;
+  margin-top: 8px;
+}
+
+.cont-box {
+  margin-top: 20px;
+  margin-bottom: 25px;
+  overflow: hidden;
+  position: relative;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25), inset 2px 2px 8px 0px rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.help-group {
+  font-size: 20px;
+  font-weight: bold;
+  padding: 15px 20px 10px 20px;
+  display: block;
+  color: #2c3e50;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.help-table {
+  text-align: center;
+  border-collapse: collapse;
+  margin: 0;
+  display: table;
+  overflow: hidden;
+  width: 100%;
+  color: var(--table-color);
+}
+
+.help-table .tr {
+  display: table-row;
+}
+
+.help-table .th {
+  background: rgba(34, 41, 51, 0.5);
+}
+
+.help-table .td,
+.help-table .th {
+  font-size: 15px;
+  display: table-cell;
+  padding: 14px 10px 14px 55px;
+  line-height: 22px;
+  position: relative;
+  text-align: left;
+  width: 33%;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  vertical-align: middle;
+}
+
+.help-table .tr:last-child .td {
+  border-bottom: none;
+}
+
+.help-icon {
+  width: 40px;
+  height: 40px;
+  display: block;
+  position: absolute;
+  background: url("icon.png") 0 0 no-repeat;
+  background-size: 500px auto;
+  border-radius: 5px;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%) scale(0.85);
+}
+
+.help-title {
+  display: inline-block;
+  font-size: 20px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.help-desc {
+  display: block;
+  font-size: 14px;
+  line-height: 18px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.copyright {
+  font-size: 13px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  position: relative;
+  padding: 15px 10px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  margin-top: 10px;
+}

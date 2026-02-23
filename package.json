@@ -1,0 +1,19 @@
+{
+  "name": "qfarm-plugin",
+  "version": "1.0.0",
+  "description": "对接 QQ农场共享版服务器的 Yunzai-Bot 插件，支持扫码登录、自动挂机等操作。",
+  "author": "y68",
+  "type": "module",
+  "main": "index.js",
+  "imports": {
+    "#qfarm.puppeteer": "./lib/puppeteer/puppeteer.js",
+    "#qfarm.model": "./model/index.js",
+    "#qfarm.components": "./components/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "*"
+  }
+}

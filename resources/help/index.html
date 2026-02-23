@@ -1,0 +1,55 @@
+{{extend defaultLayout}}
+
+{{block 'css'}}
+<link rel="stylesheet" type="text/css" href="{{_res_path}}/help/index.css" />
+<style>
+  body {
+    width: 1130px;
+    min-height: 100vh;
+  }
+  .container {
+    background: url("{{_res_path}}/help/imgs/{{bg||'bg.jpg'}}") center top no-repeat;
+    background-size: cover;
+    width: 1130px;
+    min-height: 100vh;
+    padding: 30px 40px;
+    box-sizing: border-box;
+  }
+</style>
+{{/block}}
+
+{{block 'main'}}
+<div class="info-box">
+  <div class="head-box type{{bgType||'1'}}">
+    <div class="title">{{helpCfg.title||"QQ农场"}}</div>
+    <div class="label">{{helpCfg.subTitle || "Yunzai-Bot & QQ农场插件"}}</div>
+  </div>
+</div>
+
+{{each helpGroup group}}
+{{set len = group?.list?.length || 0 }}
+<div class="cont-box">
+  <div class="help-group">{{group.group}}</div>
+  {{if len > 0}}
+  <div class="help-table">
+    <div class="tr">
+      {{each group.list help idx}}
+      <div class="td">
+        <span class="help-icon" style="{{help.css}}"></span>
+        <strong class="help-title">{{help.title}}</strong>
+        <span class="help-desc">{{help.desc}}</span>
+      </div>
+      {{if idx % (helpCfg.columnCount||3) === (helpCfg.columnCount||3)-1 && idx > 0 && idx < len-1}}
+    </div>
+    <div class="tr">
+      {{/if}}
+      {{/each}}
+      <% for(let i=(len-1)%(helpCfg.columnCount||3); i < (helpCfg.columnCount||3)-1; i++){ %>
+      <div class="td"></div>
+      <% } %>
+    </div>
+  </div>
+  {{/if}}
+</div>
+{{/each}}
+{{/block}}
