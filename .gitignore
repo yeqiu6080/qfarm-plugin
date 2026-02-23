@@ -1,0 +1,60 @@
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# 日志文件
+logs/
+*.log
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 缓存目录
+.npm
+.eslintcache
+.cache/
+
+# 测试相关
+coverage/
+.nyc_output/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# IDE 配置文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 数据文件（根据项目情况选择是否忽略）
+data/
+*.db
+*.sqlite
+
+# 生成的图片或缓存文件
+resources/**/render/
+output/
+dist/
+build/
+
+# Yunzai Bot 相关（如果在插件目录内运行）
+config/config.js
+config/*.yaml
+config/*.yml
