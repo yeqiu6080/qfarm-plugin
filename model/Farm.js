@@ -10,7 +10,18 @@ export default class Farm {
     static async getUserAccount(userId) {
         const userKey = this.getUserKey(userId)
         const accounts = await Api.getAccounts()
-        return accounts.find(acc => acc.name.startsWith(userKey) || acc.userId === userId)
+        logger.debug(`[QQ农场] 获取账号列表，查找用户: ${userId}, userKey: ${userKey}, 总账号数: ${accounts.length}`)
+        
+        const account = accounts.find(acc => {
+            const matchByName = acc.name && acc.name.startsWith(userKey)
+            const matchByUserId = acc.userId === userId
+            if (matchByName || matchByUserId) {
+                logger.debug(`[QQ农场] 匹配到账号: ${acc.id}, name: ${acc.name}, userId: ${acc.userId}`)
+            }
+            return matchByName || matchByUserId
+        })
+        
+        return account
     }
 
     // 检查用户是否已绑定账号
@@ -40,36 +51,57 @@ export default class Farm {
 
     // 删除用户账号
     static async deleteUserAccount(userId) {
-        const account = await this.getUserAccount(userId)
-        if (!account) return false
+        const userKey = this.getUserKey(userId)
+        logger.info(`[QQ农场] 开始删除用户账号: ${userId}`)
+        
+        // 获取所有可能匹配的账号（可能由于历史原因有多个）
+        const accounts = await Api.getAccounts()
+        const matchingAccounts = accounts.filter(acc => 
+            (acc.name && acc.name.startsWith(userKey)) || acc.userId === userId
+        )
+        
+        if (matchingAccounts.length === 0) {
+            logger.info(`[QQ农场] 用户 ${userId} 没有绑定账号`)
+            return false
+        }
+        
+        logger.info(`[QQ农场] 找到 ${matchingAccounts.length} 个匹配账号:`, 
+            matchingAccounts.map(a => ({ id: a.id, name: a.name, userId: a.userId })))
 
         try {
-            // 尝试停止账号（可能已停止或不存在，忽略错误）
-            try {
-                await Api.stopAccount(account.id)
-            } catch (err) {
-                logger.debug('[QQ农场] 停止账号失败（可能已停止）:', err.message)
-            }
+            // 删除所有匹配的账号
+            for (const account of matchingAccounts) {
+                logger.info(`[QQ农场] 正在删除账号: ${account.id}`)
+                
+                // 尝试停止账号（可能已停止或不存在，忽略错误）
+                try {
+                    await Api.stopAccount(account.id)
+                    logger.debug(`[QQ农场] 账号 ${account.id} 已停止`)
+                } catch (err) {
+                    logger.debug(`[QQ农场] 停止账号 ${account.id} 失败（可能已停止）:`, err.message)
+                }
 
-            // 尝试删除账号（可能不存在，忽略错误）
-            try {
-                await Api.deleteAccount(account.id)
-            } catch (err) {
-                logger.debug('[QQ农场] 删除服务端账号失败（可能不存在）:', err.message)
+                // 尝试删除账号（可能不存在，忽略错误）
+                try {
+                    await Api.deleteAccount(account.id)
+                    logger.info(`[QQ农场] 账号 ${account.id} 已删除`)
+                } catch (err) {
+                    logger.debug(`[QQ农场] 删除服务端账号 ${account.id} 失败（可能不存在）:`, err.message)
+                }
             }
 
             // 清除本地配置
             Config.deleteUserAutoAccount(userId)
 
-            // 等待并确认账号已被删除（最多重试5次，每次200ms）
-            for (let i = 0; i < 5; i++) {
-                await new Promise(resolve => setTimeout(resolve, 200))
+            // 等待并确认账号已被删除（最多重试10次，每次300ms）
+            for (let i = 0; i < 10; i++) {
+                await new Promise(resolve => setTimeout(resolve, 300))
                 const stillExists = await this.getUserAccount(userId)
                 if (!stillExists) {
-                    logger.debug('[QQ农场] 账号删除已确认')
+                    logger.info('[QQ农场] 账号删除已确认')
                     return true
                 }
-                logger.debug(`[QQ农场] 等待账号删除确认... (${i + 1}/5)`)
+                logger.debug(`[QQ农场] 等待账号删除确认... (${i + 1}/10)`)
             }
 
             logger.warn('[QQ农场] 账号删除后仍可查询到，可能存在同步延迟')
