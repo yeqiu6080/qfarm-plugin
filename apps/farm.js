@@ -130,7 +130,8 @@ export default class FarmPlugin extends plugin {
                 steals: status?.stats?.steals || 0,
                 autoEnabled,
                 accountAge: Math.max(0, accountAge),
-                version: '1.0.0'
+                version: '1.0.0',
+                userId: e.user_id
             }, { scale: 1.2 })
         } catch (error) {
             logger.error('[QQ农场] 渲染状态失败:', error)
