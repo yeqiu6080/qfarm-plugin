@@ -8,17 +8,24 @@ export default class Farm {
 
     // 获取用户绑定的账号
     static async getUserAccount(userId) {
-        const userKey = this.getUserKey(userId)
         const accounts = await Api.getAccounts()
-        logger.debug(`[QQ农场] 获取账号列表，查找用户: ${userId}, userKey: ${userKey}, 总账号数: ${accounts.length}`)
+        logger.debug(`[QQ农场] 获取账号列表，查找用户: ${userId}, 总账号数: ${accounts.length}`)
         
+        // 优先匹配固定格式的账号名 user_${userId}
+        const fixedName = `user_${userId}`
         const account = accounts.find(acc => {
-            const matchByName = acc.name && acc.name.startsWith(userKey)
-            const matchByUserId = acc.userId === userId
-            if (matchByName || matchByUserId) {
-                logger.debug(`[QQ农场] 匹配到账号: ${acc.id}, name: ${acc.name}, userId: ${acc.userId}`)
+            // 优先匹配固定格式
+            if (acc.name === fixedName) {
+                logger.debug(`[QQ农场] 匹配到固定格式账号: ${acc.id}, name: ${acc.name}`)
+                return true
             }
-            return matchByName || matchByUserId
+            // 兼容旧格式（用于清理历史数据）
+            const matchByUserId = acc.userId === userId
+            if (matchByUserId) {
+                logger.debug(`[QQ农场] 匹配到账号(按userId): ${acc.id}, name: ${acc.name}, userId: ${acc.userId}`)
+                return true
+            }
+            return false
         })
         
         return account
@@ -32,10 +39,8 @@ export default class Farm {
 
     // 创建账号
     static async createAccount(userId, code) {
-        const userKey = this.getUserKey(userId)
-        // 使用更短的随机后缀，避免名称过长
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const accountName = `${userKey}_${randomSuffix}`
+        // 使用固定格式的账号名：user_${userId}，确保一人一号
+        const accountName = `user_${userId}`
 
         return await Api.addAccount({
             name: accountName,
@@ -51,13 +56,13 @@ export default class Farm {
 
     // 删除用户账号
     static async deleteUserAccount(userId) {
-        const userKey = this.getUserKey(userId)
         logger.info(`[QQ农场] 开始删除用户账号: ${userId}`)
         
-        // 获取所有可能匹配的账号（可能由于历史原因有多个）
+        // 获取所有可能匹配的账号（包括固定格式和旧格式）
         const accounts = await Api.getAccounts()
+        const fixedName = `user_${userId}`
         const matchingAccounts = accounts.filter(acc => 
-            (acc.name && acc.name.startsWith(userKey)) || acc.userId === userId
+            acc.name === fixedName || acc.userId === userId
         )
         
         if (matchingAccounts.length === 0) {
