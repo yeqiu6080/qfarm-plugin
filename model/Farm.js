@@ -22,8 +22,10 @@ export default class Farm {
     // 创建账号
     static async createAccount(userId, code) {
         const userKey = this.getUserKey(userId)
-        const accountName = `${userKey}_${Date.now()}`
-        
+        // 使用更短的随机后缀，避免名称过长
+        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const accountName = `${userKey}_${randomSuffix}`
+
         return await Api.addAccount({
             name: accountName,
             code: code,

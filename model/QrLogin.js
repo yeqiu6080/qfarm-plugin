@@ -156,14 +156,24 @@ export default class QrLogin {
                     try {
                         logger.info('[QQ农场] 正在创建账号...')
                         const account = await Farm.createAccount(userId, code)
+
+                        if (!account || !account.id) {
+                            throw new Error('服务器返回的账号数据异常')
+                        }
+
                         logger.info('[QQ农场] 账号创建成功:', account.id)
-                        
+
                         // 启动账号
-                        await Api.startAccount(account.id)
+                        try {
+                            await Api.startAccount(account.id)
+                        } catch (startErr) {
+                            logger.warn('[QQ农场] 启动账号失败，但账号已创建:', startErr.message)
+                        }
+
                         Config.setUserAutoAccount(userId, account.id)
-                        
+
                         this.sessions.delete(userId)
-                        
+
                         if (callback) {
                             callback({
                                 success: true,

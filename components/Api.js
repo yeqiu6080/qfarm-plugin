@@ -49,8 +49,23 @@ export default class Api {
 
     // 添加账号
     static async addAccount(account) {
-        const response = await HttpClient.post(this.buildUrl('/api/accounts'), account)
-        return this.extractData(response)
+        try {
+            const response = await HttpClient.post(this.buildUrl('/api/accounts'), account)
+            const data = this.extractData(response)
+
+            // 检查服务端返回的错误
+            if (data && data.success === false) {
+                throw new Error(data.message || '服务端返回错误')
+            }
+
+            return data
+        } catch (error) {
+            // 增强错误信息
+            if (error.message && error.message.includes('HTTP 500')) {
+                throw new Error('服务器内部错误，可能是账号名称冲突或数据异常，请稍后重试')
+            }
+            throw error
+        }
     }
 
     // 删除账号
