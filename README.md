@@ -24,34 +24,39 @@
 
 ## 安装方法
 
-### 1. 复制插件到 Yunzai 目录
+### 1. 克隆插件到 Yunzai 目录
 
-将 `yunzai-plugin` 文件夹复制到 Yunzai-Bot 的 `plugins` 目录下，并重命名为 `qfarm-plugin`：
+
 
 ```bash
-# 假设当前在 qq-farm-server 目录
-cp -r yunzai-plugin /path/to/Yunzai-Bot/plugins/qfarm-plugin
+git clone https://github.com/yeqiu6080/qfarm-plugin.git ./plugins/qfarm-plugin
+
 ```
 
 ### 2. 安装依赖
 
+在插件目录下安装依赖：
+
+```bash
+cd plugins/qfarm-plugin
 pnpm i
+```
 
 ### 3. 配置服务器地址
 
 首次使用需要设置农场服务器地址：
 
 ```
-#设置农场服务器http://localhost:3001
+#设置农场服务器http://localhost:3456
 ```
 
-将 `http://localhost:3001` 替换为实际的农场服务器地址。
+将 `http://localhost:3456` 替换为实际的农场服务器地址。
 
 ### 4. 重启 Yunzai
 
 ```bash
 # 在 Yunzai 目录下
-npm restart
+pnpm restart
 ```
 
 ## 使用示例
@@ -59,7 +64,7 @@ npm restart
 ### 登录农场
 
 1. 发送 `#登录农场`
-2. 机器人会回复一个二维码
+2. 机器人会回复一个链接
 3. 使用QQ扫码登录
 4. 登录成功后自动启动挂机
 
@@ -80,7 +85,7 @@ npm restart
 
 ```json
 {
-  "serverUrl": "http://localhost:3001",
+  "serverUrl": "http://localhost:3456",
   "autoAccounts": []
 }
 ```
@@ -93,13 +98,12 @@ npm restart
 1. 确保农场服务器已启动并可访问
 2. 每个QQ用户可以绑定多个农场账号
 3. 退出农场会删除所有关联账号数据
-4. 二维码有效期为2分钟，超时请重新登录
+4. 链接有效期为2分钟，超时请重新登录
 
 ## 依赖要求
 
 - Yunzai-Bot v3.x
-- QQ农场共享版服务器
-- axios
+- [QQ农场共享版服务器](https://github.com/yeqiu6080/qq-farm-bot-server)
 
 ## 许可证
 
