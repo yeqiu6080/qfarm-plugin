@@ -94,6 +94,11 @@ export const helpList = [
                 icon: 7,
                 title: "#设置农场服务器",
                 desc: "设置服务器地址"
+            },
+            {
+                icon: 11,
+                title: "#农场更新",
+                desc: "更新插件到最新版本"
             }
         ]
     }

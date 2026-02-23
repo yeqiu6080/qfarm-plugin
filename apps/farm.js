@@ -59,6 +59,11 @@ export default class FarmPlugin extends plugin {
                 {
                     reg: '^#?(掉线推送状态|我的掉线推送)$',
                     fnc: 'offlineNotifyStatus'
+                },
+                {
+                    reg: '^#?农场更新$',
+                    fnc: 'updatePlugin',
+                    permission: 'master'
                 }
             ]
         })
@@ -587,6 +592,54 @@ export default class FarmPlugin extends plugin {
         } catch (error) {
             logger.error('[QQ农场] 查询掉线推送状态失败:', error)
             await e.reply(`❌ 查询失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 更新插件
+    async updatePlugin(e) {
+        try {
+            await e.reply('🔄 正在检查并更新插件，请稍候...')
+
+            const { execSync } = await import('child_process')
+            const pluginPath = `${process.cwd()}/plugins/qfarm-plugin`
+
+            // 执行 git pull
+            const result = execSync('git pull', {
+                cwd: pluginPath,
+                encoding: 'utf-8',
+                timeout: 60000
+            })
+
+            const output = result.trim()
+
+            if (output.includes('Already up to date') || output.includes('已经是最新')) {
+                await e.reply('✅ 插件已经是最新版本，无需更新')
+            } else if (output.includes('Updating') || output.includes('更新')) {
+                await e.reply([
+                    '✅ 插件更新成功！\n',
+                    '更新内容:\n',
+                    `${output}\n\n`,
+                    '💡 请重启 Yunzai-Bot 以应用更新'
+                ])
+            } else {
+                await e.reply([
+                    '⚠️ 更新结果:\n',
+                    `${output}\n\n`,
+                    '💡 如有问题请检查网络连接或手动更新'
+                ])
+            }
+
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 插件更新失败:', error)
+            let errorMsg = error.message
+            if (error.message.includes('not a git repository')) {
+                errorMsg = '当前插件不是通过 git 安装的，无法自动更新'
+            } else if (error.message.includes('network')) {
+                errorMsg = '网络连接失败，请检查网络后重试'
+            }
+            await e.reply(`❌ 更新失败: ${errorMsg}`)
             return true
         }
     }
