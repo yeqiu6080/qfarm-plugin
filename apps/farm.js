@@ -24,6 +24,10 @@ export default class FarmPlugin extends plugin {
                     fnc: 'logoutFarm'
                 },
                 {
+                    reg: '^#?(重登农场|农场重登|重新登录农场)$',
+                    fnc: 'reloginFarm'
+                },
+                {
                     reg: '^#?(开启自动挂机|自动挂机开启)$',
                     fnc: 'enableAuto'
                 },
@@ -180,6 +184,51 @@ export default class FarmPlugin extends plugin {
         } catch (error) {
             logger.error('[QQ农场] 退出失败:', error)
             await e.reply(`退出失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 重新登录农场
+    async reloginFarm(e) {
+        try {
+            // 先检查是否已登录
+            const hasAccount = await Farm.hasUserAccount(e.user_id)
+
+            if (hasAccount) {
+                // 已登录，先退出
+                await e.reply('🔄 正在重新登录，先退出当前账号...')
+                await Farm.deleteUserAccount(e.user_id)
+            }
+
+            // 开始新的登录流程
+            await e.reply('正在获取登录链接，请稍候...')
+
+            const result = await this.qrLogin.start(e.user_id, async (loginResult) => {
+                if (loginResult.success) {
+                    await e.reply('✅ 重新登录成功！\n💡 提示：使用"#我的农场"查看状态，"#开启自动挂机"启动挂机')
+                } else {
+                    await e.reply(`❌ 登录失败: ${loginResult.message}`)
+                }
+            })
+
+            if (!result.success) {
+                await e.reply(`登录失败: ${result.message}`)
+                return true
+            }
+
+            // 发送登录链接
+            await e.reply([
+                '═══ QQ农场重新登录 ═══\n',
+                '请点击下方链接完成登录：\n\n',
+                `${result.url}\n\n`,
+                '⏰ 有效期3分钟，请尽快点击登录\n',
+                '💡 提示：请确保使用手机QQ点击链接'
+            ])
+
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 重新登录失败:', error)
+            await e.reply(`重新登录失败: ${error.message}`)
             return true
         }
     }

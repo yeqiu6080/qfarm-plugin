@@ -38,6 +38,11 @@ export const helpList = [
                 icon: 3,
                 title: "#退出农场",
                 desc: "退出并删除账号"
+            },
+            {
+                icon: 7,
+                title: "#重登农场",
+                desc: "退出并重新登录账号"
             }
         ]
     },
