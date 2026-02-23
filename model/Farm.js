@@ -58,12 +58,21 @@ export default class Farm {
     static async startUserAccount(userId) {
         const account = await this.getUserAccount(userId)
         if (!account) return null
-        
-        const status = await Api.getAccountStatus(account.id)
-        if (!status?.isRunning) {
-            await Api.startAccount(account.id)
+
+        try {
+            const status = await Api.getAccountStatus(account.id)
+            if (!status?.isRunning) {
+                await Api.startAccount(account.id)
+            }
+        } catch (error) {
+            // 404 表示账号未运行，直接启动
+            if (error.message?.includes('HTTP 404')) {
+                await Api.startAccount(account.id)
+            } else {
+                throw error
+            }
         }
-        
+
         Config.setUserAutoAccount(userId, account.id)
         return account
     }
@@ -72,12 +81,19 @@ export default class Farm {
     static async stopUserAccount(userId) {
         const account = await this.getUserAccount(userId)
         if (!account) return null
-        
-        const status = await Api.getAccountStatus(account.id)
-        if (status?.isRunning) {
-            await Api.stopAccount(account.id)
+
+        try {
+            const status = await Api.getAccountStatus(account.id)
+            if (status?.isRunning) {
+                await Api.stopAccount(account.id)
+            }
+        } catch (error) {
+            // 404 表示账号未运行，无需停止
+            if (!error.message?.includes('HTTP 404')) {
+                throw error
+            }
         }
-        
+
         Config.deleteUserAutoAccount(userId)
         return account
     }
@@ -86,8 +102,21 @@ export default class Farm {
     static async getUserAccountStatus(userId) {
         const account = await this.getUserAccount(userId)
         if (!account) return null
-        
-        return await Api.getAccountStatus(account.id)
+
+        try {
+            return await Api.getAccountStatus(account.id)
+        } catch (error) {
+            // 404 表示账号未运行，返回默认状态
+            if (error.message?.includes('HTTP 404')) {
+                return {
+                    isRunning: false,
+                    isConnected: false,
+                    userState: {},
+                    stats: {}
+                }
+            }
+            throw error
+        }
     }
 
     // 检查用户自动挂机状态
