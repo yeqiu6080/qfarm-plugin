@@ -1,7 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config, Api, Renderer } from '../components/index.js'
 import { Farm, QrLogin, OfflineMonitor } from '../model/index.js'
-import HttpClient from '../components/HttpClient.js'
 
 export default class FarmPlugin extends plugin {
     constructor() {
