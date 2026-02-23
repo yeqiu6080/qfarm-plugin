@@ -9,18 +9,6 @@
   --table-color: #5a4a48;
 }
 
-body {
-  width: 1130px;
-  min-height: 100vh;
-}
-
-.container {
-  padding: 30px 40px;
-  width: 1130px;
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-
 .head-box {
   margin: 20px 0 30px 0;
   padding-bottom: 0;
