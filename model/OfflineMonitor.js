@@ -9,17 +9,66 @@ export default class OfflineMonitor {
     }
 
     // 启动监控
-    start() {
+    async start() {
         if (this.checkInterval) {
             logger.info('[QQ农场] 掉线推送监控已在运行')
             return
         }
 
         logger.info('[QQ农场] 启动掉线推送监控')
+
+        // 先初始化账号状态缓存，避免重启后无法检测到已掉线的情况
+        await this.initAccountStatusCache()
+
         // 每30秒检查一次状态
         this.checkInterval = setInterval(() => {
             this.checkAllAccounts()
         }, 30000)
+    }
+
+    // 初始化账号状态缓存
+    async initAccountStatusCache() {
+        try {
+            const notifyConfig = Config.getOfflineNotifyConfig()
+            if (!notifyConfig.enabled) return
+
+            // 获取所有需要监控的用户
+            const userGroups = notifyConfig.userGroups || {}
+            const userIds = Object.keys(userGroups).filter(userId => {
+                const groups = userGroups[userId]
+                return Array.isArray(groups) && groups.length > 0
+            })
+
+            if (userIds.length === 0) return
+
+            logger.info(`[QQ农场] 正在初始化 ${userIds.length} 个用户的账号状态缓存`)
+
+            // 批量获取账号状态并缓存
+            for (const userId of userIds) {
+                try {
+                    const account = await Farm.getUserAccount(userId)
+                    if (!account) continue
+
+                    const status = await Farm.getUserAccountStatus(userId)
+                    if (!status) continue
+
+                    // 初始化缓存，将当前状态作为上一次状态
+                    this.accountStatusCache[account.id] = {
+                        isConnected: status.isConnected,
+                        isRunning: status.isRunning,
+                        lastCheck: Date.now()
+                    }
+
+                    logger.debug(`[QQ农场] 用户 ${userId} 账号状态已缓存: isConnected=${status.isConnected}`)
+                } catch (err) {
+                    logger.debug(`[QQ农场] 初始化用户 ${userId} 状态缓存失败:`, err.message)
+                }
+            }
+
+            logger.info('[QQ农场] 账号状态缓存初始化完成')
+        } catch (error) {
+            logger.error('[QQ农场] 初始化账号状态缓存失败:', error)
+        }
     }
 
     // 停止监控

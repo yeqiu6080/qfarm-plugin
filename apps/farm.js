@@ -70,9 +70,11 @@ export default class FarmPlugin extends plugin {
         // 初始化扫码登录管理器
         this.qrLogin = new QrLogin()
 
-        // 初始化掉线推送监控
+        // 初始化掉线推送监控（异步启动）
         this.offlineMonitor = new OfflineMonitor()
-        this.offlineMonitor.start()
+        this.offlineMonitor.start().catch(err => {
+            logger.error('[QQ农场] 启动掉线推送监控失败:', err)
+        })
     }
 
     // 查询农场状态
