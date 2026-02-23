@@ -11,6 +11,11 @@ const defaultConfig = {
     userAutoAccounts: {}, // 用户自动挂机状态: { userId: accountId }
     auto: {
         enabled: true // 登录后是否自动启用挂机
+    },
+    offlineNotify: {
+        enabled: true, // 是否启用掉线推送功能
+        userGroups: {}, // 用户开启推送的群: { userId: [groupId1, groupId2, ...] }
+        cooldown: 300 // 推送冷却时间（秒），避免频繁推送
     }
 }
 
@@ -84,5 +89,52 @@ export default class Config {
         const config = this.load()
         config.auto = { ...config.auto, ...autoConfig }
         this.save(config)
+    }
+
+    // 获取掉线推送配置
+    static getOfflineNotifyConfig() {
+        return this.load().offlineNotify || { enabled: true, userGroups: {}, cooldown: 300 }
+    }
+
+    // 设置掉线推送配置
+    static setOfflineNotifyConfig(notifyConfig) {
+        const config = this.load()
+        config.offlineNotify = { ...config.offlineNotify, ...notifyConfig }
+        this.save(config)
+    }
+
+    // 获取用户开启推送的群列表
+    static getUserNotifyGroups(userId) {
+        const notifyConfig = this.getOfflineNotifyConfig()
+        return notifyConfig.userGroups[userId] || []
+    }
+
+    // 为用户添加推送群
+    static addUserNotifyGroup(userId, groupId) {
+        const config = this.load()
+        if (!config.offlineNotify) {
+            config.offlineNotify = { enabled: true, userGroups: {}, cooldown: 300 }
+        }
+        if (!config.offlineNotify.userGroups[userId]) {
+            config.offlineNotify.userGroups[userId] = []
+        }
+        if (!config.offlineNotify.userGroups[userId].includes(groupId)) {
+            config.offlineNotify.userGroups[userId].push(groupId)
+            this.save(config)
+        }
+    }
+
+    // 为用户移除推送群
+    static removeUserNotifyGroup(userId, groupId) {
+        const config = this.load()
+        if (!config.offlineNotify?.userGroups[userId]) return
+        config.offlineNotify.userGroups[userId] = config.offlineNotify.userGroups[userId].filter(id => id !== groupId)
+        this.save(config)
+    }
+
+    // 检查用户是否已开启某个群的推送
+    static isUserNotifyEnabled(userId, groupId) {
+        const groups = this.getUserNotifyGroups(userId)
+        return groups.includes(groupId)
     }
 }

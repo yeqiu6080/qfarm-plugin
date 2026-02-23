@@ -62,6 +62,26 @@ export const helpList = [
         ]
     },
     {
+        group: "掉线推送",
+        list: [
+            {
+                icon: 8,
+                title: "#开启掉线推送",
+                desc: "在当前群开启掉线提醒"
+            },
+            {
+                icon: 9,
+                title: "#关闭掉线推送",
+                desc: "关闭当前群的掉线提醒"
+            },
+            {
+                icon: 10,
+                title: "#掉线推送状态",
+                desc: "查看推送设置状态"
+            }
+        ]
+    },
+    {
         group: "主人指令",
         auth: "master",
         list: [

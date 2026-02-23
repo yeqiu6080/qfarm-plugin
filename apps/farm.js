@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config, Api, Renderer } from '../components/index.js'
-import { Farm, QrLogin } from '../model/index.js'
+import { Farm, QrLogin, OfflineMonitor } from '../model/index.js'
 import HttpClient from '../components/HttpClient.js'
 
 export default class FarmPlugin extends plugin {
@@ -47,12 +47,28 @@ export default class FarmPlugin extends plugin {
                     reg: '^#?(农场账号列表|我的农场账号)$',
                     fnc: 'accountList',
                     permission: 'master'
+                },
+                {
+                    reg: '^#?(开启掉线推送|掉线推送开启)$',
+                    fnc: 'enableOfflineNotify'
+                },
+                {
+                    reg: '^#?(关闭掉线推送|掉线推送关闭)$',
+                    fnc: 'disableOfflineNotify'
+                },
+                {
+                    reg: '^#?(掉线推送状态|我的掉线推送)$',
+                    fnc: 'offlineNotifyStatus'
                 }
             ]
         })
 
         // 初始化扫码登录管理器
         this.qrLogin = new QrLogin()
+
+        // 初始化掉线推送监控
+        this.offlineMonitor = new OfflineMonitor()
+        this.offlineMonitor.start()
     }
 
     // 查询农场状态
@@ -449,7 +465,12 @@ export default class FarmPlugin extends plugin {
 #开启自动挂机 - 启动自动挂机
 #关闭自动挂机 - 停止自动挂机
 
-📋 其他指令：
+� 掉线推送：
+#开启掉线推送 - 在当前群开启掉线提醒
+#关闭掉线推送 - 关闭当前群的掉线提醒
+#掉线推送状态 - 查看推送设置状态
+
+�📋 其他指令：
 #农场账号列表 - 查看所有账号（仅主人）
 
 🔧 主人指令：
@@ -457,5 +478,115 @@ export default class FarmPlugin extends plugin {
 
 ═══════════════════`
         await e.reply(msg)
+    }
+
+    // 开启掉线推送
+    async enableOfflineNotify(e) {
+        try {
+            // 必须在群聊中使用
+            if (!e.group) {
+                await e.reply('❌ 该指令只能在群聊中使用')
+                return true
+            }
+
+            const groupId = e.group_id
+            const userId = e.user_id
+
+            // 检查是否已经开启
+            if (Config.isUserNotifyEnabled(userId, groupId)) {
+                await e.reply('✅ 当前群已开启掉线推送，无需重复开启')
+                return true
+            }
+
+            // 添加到推送列表
+            Config.addUserNotifyGroup(userId, groupId)
+
+            await e.reply([
+                '✅ 已开启掉线推送\n',
+                `群号: ${groupId}\n`,
+                '💡 当农场掉线时，会在此群@你提醒\n',
+                '使用 "#关闭掉线推送" 可关闭提醒'
+            ])
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 开启掉线推送失败:', error)
+            await e.reply(`❌ 开启失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 关闭掉线推送
+    async disableOfflineNotify(e) {
+        try {
+            // 必须在群聊中使用
+            if (!e.group) {
+                await e.reply('❌ 该指令只能在群聊中使用')
+                return true
+            }
+
+            const groupId = e.group_id
+            const userId = e.user_id
+
+            // 检查是否已经开启
+            if (!Config.isUserNotifyEnabled(userId, groupId)) {
+                await e.reply('❌ 当前群未开启掉线推送')
+                return true
+            }
+
+            // 从推送列表移除
+            Config.removeUserNotifyGroup(userId, groupId)
+
+            await e.reply([
+                '✅ 已关闭掉线推送\n',
+                `群号: ${groupId}\n`,
+                '💡 农场掉线时将不再在此群提醒'
+            ])
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 关闭掉线推送失败:', error)
+            await e.reply(`❌ 关闭失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 查看掉线推送状态
+    async offlineNotifyStatus(e) {
+        try {
+            const userId = e.user_id
+            const notifyConfig = Config.getOfflineNotifyConfig()
+            const groupIds = Config.getUserNotifyGroups(userId)
+
+            let msg = '═══ 掉线推送状态 ═══\n\n'
+            msg += `功能状态: ${notifyConfig.enabled ? '✅ 已启用' : '❌ 已禁用'}\n`
+            msg += `冷却时间: ${notifyConfig.cooldown || 300}秒\n\n`
+
+            if (groupIds.length === 0) {
+                msg += '当前未在任何群开启掉线推送\n'
+                msg += '💡 在群聊中发送 "#开启掉线推送" 即可开启'
+            } else {
+                msg += `已开启推送的群 (${groupIds.length}个):\n`
+                for (const groupId of groupIds) {
+                    // 尝试获取群名称
+                    let groupName = ''
+                    try {
+                        const group = Bot.pickGroup(groupId)
+                        if (group && group.name) {
+                            groupName = ` - ${group.name}`
+                        }
+                    } catch (err) {
+                        // 忽略错误
+                    }
+                    msg += `  • ${groupId}${groupName}\n`
+                }
+            }
+
+            msg += '\n═══════════════════'
+            await e.reply(msg)
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 查询掉线推送状态失败:', error)
+            await e.reply(`❌ 查询失败: ${error.message}`)
+            return true
+        }
     }
 }
