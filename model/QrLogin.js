@@ -8,9 +8,15 @@ export default class QrLogin {
 
     // 开始扫码登录
     async start(userId, callback) {
-        // 检查是否已绑定
-        if (await Farm.hasUserAccount(userId)) {
-            return { success: false, message: '你已绑定农场账号，请先使用"#退出农场"解除绑定后再登录新账号' }
+        // 检查是否已绑定（带重试，避免服务端缓存问题）
+        let hasAccount = await Farm.hasUserAccount(userId)
+        if (hasAccount) {
+            // 等待一小段时间后再次确认，避免服务端缓存
+            await new Promise(resolve => setTimeout(resolve, 300))
+            hasAccount = await Farm.hasUserAccount(userId)
+            if (hasAccount) {
+                return { success: false, message: '你已绑定农场账号，请先使用"#退出农场"解除绑定后再登录新账号' }
+            }
         }
 
         // 检查是否已有进行中的登录

@@ -60,6 +60,19 @@ export default class Farm {
 
             // 清除本地配置
             Config.deleteUserAutoAccount(userId)
+
+            // 等待并确认账号已被删除（最多重试5次，每次200ms）
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => setTimeout(resolve, 200))
+                const stillExists = await this.getUserAccount(userId)
+                if (!stillExists) {
+                    logger.debug('[QQ农场] 账号删除已确认')
+                    return true
+                }
+                logger.debug(`[QQ农场] 等待账号删除确认... (${i + 1}/5)`)
+            }
+
+            logger.warn('[QQ农场] 账号删除后仍可查询到，可能存在同步延迟')
             return true
         } catch (err) {
             logger.error('[QQ农场] 删除账号失败:', err)
