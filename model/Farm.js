@@ -42,10 +42,23 @@ export default class Farm {
     static async deleteUserAccount(userId) {
         const account = await this.getUserAccount(userId)
         if (!account) return false
-        
+
         try {
-            await Api.stopAccount(account.id)
-            await Api.deleteAccount(account.id)
+            // 尝试停止账号（可能已停止或不存在，忽略错误）
+            try {
+                await Api.stopAccount(account.id)
+            } catch (err) {
+                logger.debug('[QQ农场] 停止账号失败（可能已停止）:', err.message)
+            }
+
+            // 尝试删除账号（可能不存在，忽略错误）
+            try {
+                await Api.deleteAccount(account.id)
+            } catch (err) {
+                logger.debug('[QQ农场] 删除服务端账号失败（可能不存在）:', err.message)
+            }
+
+            // 清除本地配置
             Config.deleteUserAutoAccount(userId)
             return true
         } catch (err) {

@@ -197,7 +197,11 @@ export default class FarmPlugin extends plugin {
             if (hasAccount) {
                 // 已登录，先退出
                 await e.reply('🔄 正在重新登录，先退出当前账号...')
-                await Farm.deleteUserAccount(e.user_id)
+                const deleted = await Farm.deleteUserAccount(e.user_id)
+                if (!deleted) {
+                    await e.reply('❌ 退出当前账号失败，请稍后重试或使用"#退出农场"后再试')
+                    return true
+                }
             }
 
             // 开始新的登录流程
