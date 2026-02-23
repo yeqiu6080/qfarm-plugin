@@ -19,10 +19,13 @@ export default class Api {
 
     // 提取响应数据（服务器返回格式: { success: true, data: ... }）
     static extractData(response) {
-        if (response && response.success && response.data !== undefined) {
-            return response.data
+        // HttpClient 返回的 response 结构是 { data: 服务端返回的数据, status, ... }
+        // 服务端返回的数据格式是 { success: true, data: 实际数据 }
+        const serverData = response?.data
+        if (serverData && serverData.success === true && serverData.data !== undefined) {
+            return serverData.data
         }
-        return response
+        return serverData
     }
 
     // 获取所有账号
