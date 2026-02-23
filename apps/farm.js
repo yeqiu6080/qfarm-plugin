@@ -121,7 +121,7 @@ export default class FarmPlugin extends plugin {
     // 登录农场
     async loginFarm(e) {
         try {
-            await e.reply('正在启动扫码登录，请稍候...')
+            await e.reply('正在获取登录链接，请稍候...')
 
             const result = await this.qrLogin.start(e.user_id, async (status) => {
                 if (status.success) {
@@ -151,9 +151,9 @@ export default class FarmPlugin extends plugin {
             // 发送登录链接
             await e.reply([
                 '═══ QQ农场登录 ═══\n',
-                '请点击下方链接进行登录：\n\n',
+                '请点击下方链接完成登录：\n\n',
                 `${result.url}\n\n`,
-                '⏰ 有效期2分钟，请尽快点击登录\n',
+                '⏰ 有效期3分钟，请尽快点击登录\n',
                 '💡 提示：请确保使用手机QQ点击链接'
             ])
 
