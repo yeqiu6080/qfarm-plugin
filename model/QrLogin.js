@@ -154,14 +154,17 @@ export default class QrLogin {
 
                         logger.info('[QQ农场] 账号创建成功:', account.id)
 
-                        // 启动账号
-                        try {
-                            await Api.startAccount(account.id)
-                        } catch (startErr) {
-                            logger.warn('[QQ农场] 启动账号失败，但账号已创建:', startErr.message)
-                        }
+                        // 立即启动账号（避免code过期）
+                        logger.info('[QQ农场] 正在启动账号...')
+                        await Api.startAccount(account.id)
+                        logger.info('[QQ农场] 账号启动成功')
 
-                        Config.setUserAutoAccount(userId, account.id)
+                        // 根据自动挂机配置决定是否启用自动功能
+                        const autoConfig = Config.getAutoConfig?.() || { enabled: true }
+                        if (autoConfig.enabled !== false) {
+                            Config.setUserAutoAccount(userId, account.id)
+                            logger.info('[QQ农场] 已启用自动挂机')
+                        }
 
                         this.sessions.delete(userId)
 
@@ -169,14 +172,15 @@ export default class QrLogin {
                             callback({
                                 success: true,
                                 stage: 'completed',
-                                account
+                                account,
+                                autoEnabled: autoConfig.enabled !== false
                             })
                         }
                     } catch (createErr) {
-                        logger.error('[QQ农场] 创建账号失败:', createErr)
+                        logger.error('[QQ农场] 创建账号或启动失败:', createErr)
                         this.sessions.delete(userId)
                         if (callback) {
-                            callback({ success: false, stage: 'error', message: '创建账号失败: ' + createErr.message })
+                            callback({ success: false, stage: 'error', message: '创建账号或启动失败: ' + createErr.message })
                         }
                     }
                     return

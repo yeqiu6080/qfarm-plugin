@@ -205,9 +205,10 @@ export default class FarmPlugin extends plugin {
 
             const result = await this.qrLogin.start(e.user_id, async (loginResult) => {
                 if (loginResult.success) {
-                    await e.reply('✅ 重新登录成功！\n💡 提示：使用"#我的农场"查看状态，"#开启自动挂机"启动挂机')
+                    const autoMsg = loginResult.autoEnabled ? '自动挂机已开启' : '自动挂机未开启（可在设置中开启）'
+                    await e.reply(`✅ 重新登录成功！\n🎮 ${autoMsg}\n💡 提示：使用"#我的农场"查看状态`)
                 } else {
-                    await e.reply(`❌ 登录失败: ${loginResult.message}`)
+                    await e.reply(`❌ 重新登录失败: ${loginResult.message}`)
                 }
             })
 

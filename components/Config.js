@@ -8,7 +8,10 @@ const configDir = path.dirname(configPath)
 // 默认配置
 const defaultConfig = {
     serverUrl: 'http://127.0.0.1:3456',
-    userAutoAccounts: {} // 用户自动挂机状态: { userId: accountId }
+    userAutoAccounts: {}, // 用户自动挂机状态: { userId: accountId }
+    auto: {
+        enabled: true // 登录后是否自动启用挂机
+    }
 }
 
 export default class Config {
@@ -68,6 +71,18 @@ export default class Config {
     static deleteUserAutoAccount(userId) {
         const config = this.load()
         delete config.userAutoAccounts[userId]
+        this.save(config)
+    }
+
+    // 获取自动挂机配置
+    static getAutoConfig() {
+        return this.load().auto || { enabled: true }
+    }
+
+    // 设置自动挂机配置
+    static setAutoConfig(autoConfig) {
+        const config = this.load()
+        config.auto = { ...config.auto, ...autoConfig }
         this.save(config)
     }
 }
