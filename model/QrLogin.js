@@ -22,30 +22,22 @@ export default class QrLogin {
             // 1. 创建扫码会话
             const response = await Api.startQrLogin()
             logger.info('[QQ农场] 扫码登录会话响应:', JSON.stringify(response))
-            
-            if (!response.success || !response.data) {
+
+            if (!response || !response.sessionId) {
                 throw new Error('服务器返回数据异常')
             }
-            
-            const sessionId = response.data.sessionId
-            if (!sessionId) {
-                logger.error('[QQ农场] 无法从响应中提取sessionId:', response)
-                throw new Error('获取会话ID失败')
-            }
-            
+
+            const sessionId = response.sessionId
+
             // 2. 获取登录链接
             const qrResponse = await Api.getQrLoginUrl(sessionId)
             logger.info('[QQ农场] 登录链接响应:', JSON.stringify(qrResponse))
-            
-            if (!qrResponse.success || !qrResponse.data) {
+
+            if (!qrResponse || !qrResponse.url) {
                 throw new Error('获取登录链接失败')
             }
-            
-            const qrUrl = qrResponse.data.url
-            if (!qrUrl) {
-                logger.error('[QQ农场] 无法从响应中提取url:', qrResponse)
-                throw new Error('获取登录链接失败')
-            }
+
+            const qrUrl = qrResponse.url
             
             // 3. 保存会话并开始轮询
             this.sessions.set(userId, {
@@ -113,20 +105,19 @@ export default class QrLogin {
                 }
 
                 // 服务器返回异常
-                if (!response.success || !response.data) {
+                if (!response || !response.status) {
                     logger.warn('[QQ农场] 服务器返回异常:', response)
                     setTimeout(check, interval)
                     return
                 }
 
-                const data = response.data
-                const status = data.status
+                const status = response.status
 
                 // 登录成功
                 if (status === 'success') {
-                    const code = data.code
+                    const code = response.code
                     if (!code) {
-                        logger.error('[QQ农场] 登录成功但未返回code:', data)
+                        logger.error('[QQ农场] 登录成功但未返回code:', response)
                         setTimeout(check, interval)
                         return
                     }

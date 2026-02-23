@@ -109,20 +109,19 @@ export default class Api {
     // 开始扫码登录
     static async startQrLogin() {
         const response = await HttpClient.post(this.buildUrl('/api/qr-login'))
-        // 扫码登录需要返回完整响应，因为需要检查 success 字段
-        return response.data || response
+        return this.extractData(response)
     }
 
     // 获取扫码登录二维码URL
     static async getQrLoginUrl(sessionId) {
         const response = await HttpClient.get(this.buildUrl(`/api/qr-login/${sessionId}/url`))
-        return response.data || response
+        return this.extractData(response)
     }
 
     // 查询扫码状态
     static async queryQrStatus(sessionId) {
         const response = await HttpClient.get(this.buildUrl(`/api/qr-login/${sessionId}/status`))
-        return response.data || response
+        return this.extractData(response)
     }
 
     // 测试服务器连接
