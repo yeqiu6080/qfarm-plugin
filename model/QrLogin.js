@@ -137,7 +137,24 @@ export default class QrLogin {
                     // 先检查用户是否已经有账号了
                     const existingAccount = await Farm.getUserAccount(userId)
                     if (existingAccount) {
-                        logger.info('[QQ农场] 用户已有账号，跳过创建:', existingAccount.id)
+                        logger.info('[QQ农场] 用户已有账号，启动现有账号:', existingAccount.id)
+                        
+                        try {
+                            // 启动已存在的账号
+                            await Api.startAccount(existingAccount.id)
+                            logger.info('[QQ农场] 现有账号启动成功:', existingAccount.id)
+                            
+                            // 设置自动挂机
+                            const autoConfig = Config.getAutoConfig?.() || { enabled: true }
+                            if (autoConfig.enabled !== false) {
+                                Config.setUserAutoAccount(userId, existingAccount.id)
+                                logger.info('[QQ农场] 已启用自动挂机')
+                            }
+                        } catch (startErr) {
+                            logger.error('[QQ农场] 启动现有账号失败:', startErr)
+                            // 启动失败也继续返回成功，因为账号已存在
+                        }
+                        
                         this.sessions.delete(userId)
                         if (callback) {
                             callback({
