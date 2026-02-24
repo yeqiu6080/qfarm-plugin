@@ -1,12 +1,22 @@
 import { Config, Api } from '../components/index.js'
 import { Farm } from './index.js'
 
+// 单例实例
+let instance = null
+
 export default class OfflineMonitor {
     constructor() {
+        // 单例模式：确保只有一个实例
+        if (instance) {
+            return instance
+        }
+        instance = this
+
         this.checkInterval = null
         this.lastNotifyTime = {} // 记录每个用户上次推送时间: { userId: timestamp }
         this.accountStatusCache = {} // 缓存账号状态: { accountId: { isConnected, lastCheck } }
         this.notifiedOffline = {} // 记录已发送掉线通知的用户: { userId: boolean }
+        this.disconnectStartTime = {} // 记录开始断开连接的时间: { userId: timestamp }
     }
 
     // 启动监控
@@ -75,19 +85,39 @@ export default class OfflineMonitor {
                 lastCheck: Date.now()
             }
 
-            // 判断是否需要推送：之前是连接状态，现在断开，且未发送过掉线通知
+            // 判断是否需要推送：之前是连接状态，现在断开
             if (prevStatus?.isConnected === true && status.isConnected === false) {
-                // 检查是否已经发送过掉线通知（防止重复发送）
-                if (!this.notifiedOffline[userId]) {
-                    await this.sendOfflineNotify(userId, status)
+                // 记录开始断开的时间
+                if (!this.disconnectStartTime[userId]) {
+                    this.disconnectStartTime[userId] = Date.now()
+                    logger.debug(`[QQ农场] 用户 ${userId} 开始断开连接计时`)
                 }
             }
 
-            // 如果账号已恢复连接，清除掉线通知标记
+            // 如果账号已恢复连接，清除相关标记
             if (status.isConnected === true) {
                 if (this.notifiedOffline[userId]) {
                     delete this.notifiedOffline[userId]
                     logger.debug(`[QQ农场] 用户 ${userId} 账号已恢复连接，清除掉线通知标记`)
+                }
+                if (this.disconnectStartTime[userId]) {
+                    delete this.disconnectStartTime[userId]
+                    logger.debug(`[QQ农场] 用户 ${userId} 账号已恢复连接，清除断开计时`)
+                }
+            }
+
+            // 检查是否需要发送掉线通知：断开状态持续超过确认时间，且未发送过通知
+            if (status.isConnected === false && this.disconnectStartTime[userId] && !this.notifiedOffline[userId]) {
+                const disconnectDuration = Date.now() - this.disconnectStartTime[userId]
+                const confirmDelay = 60000 // 确认延迟：60秒，避免状态抖动导致频繁推送
+
+                if (disconnectDuration >= confirmDelay) {
+                    const sent = await this.sendOfflineNotify(userId, status)
+                    // 即使因为冷却时间没有实际发送，也标记为已通知，避免重复尝试
+                    if (!sent) {
+                        this.notifiedOffline[userId] = true
+                        logger.debug(`[QQ农场] 用户 ${userId} 掉线通知因冷却时间被跳过，标记为已通知`)
+                    }
                 }
             }
         } catch (error) {
@@ -96,6 +126,7 @@ export default class OfflineMonitor {
     }
 
     // 发送掉线推送
+    // 返回值：boolean，是否实际发送了消息
     async sendOfflineNotify(userId, status) {
         try {
             const notifyConfig = Config.getOfflineNotifyConfig()
@@ -106,12 +137,12 @@ export default class OfflineMonitor {
             const now = Date.now()
             if (now - lastNotify < cooldown * 1000) {
                 logger.debug(`[QQ农场] 用户 ${userId} 掉线推送冷却中，跳过`)
-                return
+                return false
             }
 
             // 获取用户开启推送的群列表
             const groupIds = Config.getUserNotifyGroups(userId)
-            if (!groupIds || groupIds.length === 0) return
+            if (!groupIds || groupIds.length === 0) return false
 
             // 构建推送消息
             const reason = status.disconnectedReason || '连接断开'
@@ -145,9 +176,12 @@ export default class OfflineMonitor {
                 this.lastNotifyTime[userId] = now
                 this.notifiedOffline[userId] = true // 标记已发送掉线通知
                 logger.info(`[QQ农场] 已向用户 ${userId} 的 ${sentCount} 个群发送掉线推送`)
+                return true
             }
+            return false
         } catch (error) {
             logger.error(`[QQ农场] 发送掉线推送失败:`, error)
+            return false
         }
     }
 
@@ -160,5 +194,6 @@ export default class OfflineMonitor {
     clearUserCache(userId) {
         delete this.lastNotifyTime[userId]
         delete this.notifiedOffline[userId]
+        delete this.disconnectStartTime[userId]
     }
 }
