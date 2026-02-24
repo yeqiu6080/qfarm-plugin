@@ -10,7 +10,7 @@ export default class OfflineMonitor {
     }
 
     // 启动监控
-    start() {
+    async start() {
         if (this.checkInterval) {
             logger.info('[QQ农场] 掉线推送监控已在运行')
             return
