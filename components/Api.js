@@ -116,4 +116,72 @@ export default class Api {
         await HttpClient.get(testUrl, { timeout: 5000 })
         return true
     }
+
+    // ========== 新增API支持（服务器v2+）==========
+
+    // 获取服务器健康状态
+    static async getHealth() {
+        try {
+            const response = await HttpClient.get(this.buildUrl('/api/health'))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
+
+    // 获取账号每日奖励状态
+    static async getDailyRewards(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/daily-rewards`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
+
+    // 手动领取每日奖励
+    static async claimDailyRewards(accountId) {
+        try {
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/daily-rewards/claim`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
+
+    // 获取土地详情
+    static async getLands(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/lands`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
+
+    // 解锁土地
+    static async unlockLand(accountId, landId) {
+        try {
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/lands/${landId}/unlock`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
+
+    // 升级土地
+    static async upgradeLand(accountId, landId) {
+        try {
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/lands/${landId}/upgrade`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return null
+        }
+    }
 }

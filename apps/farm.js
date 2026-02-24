@@ -137,7 +137,8 @@ export default class FarmPlugin extends plugin {
                 autoEnabled,
                 accountAge: Math.max(0, accountAge),
                 version: '1.0.0',
-                userId: e.user_id
+                userId: e.user_id,
+                expProgress: status?.userState?.expProgress || null
             }, { scale: 1.2 })
         } catch (error) {
             logger.error('[QQ农场] 渲染状态失败:', error)

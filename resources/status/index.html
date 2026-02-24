@@ -133,8 +133,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 8px;
     }
-    
+
     .level-badge {
       background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
       color: white;
@@ -142,6 +143,33 @@
       border-radius: 12px;
       font-size: 12px;
       font-weight: 700;
+    }
+
+    /* 经验进度条 */
+    .exp-bar {
+      margin-top: 8px;
+    }
+
+    .exp-label {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .exp-progress {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .exp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50 0%, #81C784 100%);
+      border-radius: 3px;
+      transition: width 0.3s ease;
     }
     
     /* 金币显示 */
@@ -284,6 +312,17 @@
             <span class="level-badge">Lv.{{level}}</span>
             <span>{{isConnected ? '🟢 在线' : '🔴 离线'}}</span>
           </div>
+          {{if expProgress}}
+          <div class="exp-bar">
+            <div class="exp-label">
+              <span>经验值</span>
+              <span>{{expProgress.current}}/{{expProgress.needed}} ({{expProgress.percent}}%)</span>
+            </div>
+            <div class="exp-progress">
+              <div class="exp-fill" style="width: {{expProgress.percent}}%"></div>
+            </div>
+          </div>
+          {{/if}}
         </div>
       </div>
       
