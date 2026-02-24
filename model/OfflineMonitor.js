@@ -6,6 +6,7 @@ export default class OfflineMonitor {
         this.checkInterval = null
         this.lastNotifyTime = {} // 记录每个用户上次推送时间: { userId: timestamp }
         this.accountStatusCache = {} // 缓存账号状态: { accountId: { isConnected, lastCheck } }
+        this.notifiedOffline = {} // 记录已发送掉线通知的用户: { userId: boolean }
     }
 
     // 启动监控
@@ -74,9 +75,20 @@ export default class OfflineMonitor {
                 lastCheck: Date.now()
             }
 
-            // 判断是否需要推送：之前是连接状态，现在断开
+            // 判断是否需要推送：之前是连接状态，现在断开，且未发送过掉线通知
             if (prevStatus?.isConnected === true && status.isConnected === false) {
-                await this.sendOfflineNotify(userId, status)
+                // 检查是否已经发送过掉线通知（防止重复发送）
+                if (!this.notifiedOffline[userId]) {
+                    await this.sendOfflineNotify(userId, status)
+                }
+            }
+
+            // 如果账号已恢复连接，清除掉线通知标记
+            if (status.isConnected === true) {
+                if (this.notifiedOffline[userId]) {
+                    delete this.notifiedOffline[userId]
+                    logger.debug(`[QQ农场] 用户 ${userId} 账号已恢复连接，清除掉线通知标记`)
+                }
             }
         } catch (error) {
             logger.error(`[QQ农场] 检查用户 ${userId} 账号状态失败:`, error)
@@ -131,6 +143,7 @@ export default class OfflineMonitor {
 
             if (sentCount > 0) {
                 this.lastNotifyTime[userId] = now
+                this.notifiedOffline[userId] = true // 标记已发送掉线通知
                 logger.info(`[QQ农场] 已向用户 ${userId} 的 ${sentCount} 个群发送掉线推送`)
             }
         } catch (error) {
@@ -146,5 +159,6 @@ export default class OfflineMonitor {
     // 清除用户的推送缓存
     clearUserCache(userId) {
         delete this.lastNotifyTime[userId]
+        delete this.notifiedOffline[userId]
     }
 }
