@@ -63,6 +63,41 @@ export default class FarmPlugin extends plugin {
                     reg: '^#?农场更新$',
                     fnc: 'updatePlugin',
                     permission: 'master'
+                },
+                {
+                    reg: '^#?农场下线\\s*(.+)?$',
+                    fnc: 'adminOfflineUser',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场禁止\\s*(.+)?$',
+                    fnc: 'adminBanUser',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场解禁\\s*(.+)?$',
+                    fnc: 'adminUnbanUser',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场状态\\s*(.+)?$',
+                    fnc: 'adminUserStatus',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场允许群\\s*(.+)?$',
+                    fnc: 'adminAllowGroup',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场拒绝群\\s*(.+)?$',
+                    fnc: 'adminDisallowGroup',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场管理状态$',
+                    fnc: 'adminManageStatus',
+                    permission: 'master'
                 }
             ]
         })
@@ -77,9 +112,31 @@ export default class FarmPlugin extends plugin {
         })
     }
 
+    // 检查用户是否被禁止
+    async checkUserBanned(e) {
+        if (Config.isUserBanned(e.user_id)) {
+            await e.reply('❌ 你已被禁止使用农场功能')
+            return true
+        }
+        return false
+    }
+
+    // 检查群是否允许使用
+    async checkGroupAllowed(e) {
+        if (e.group_id && !Config.isGroupAllowed(e.group_id)) {
+            await e.reply('❌ 本群已被禁止使用农场功能')
+            return true
+        }
+        return false
+    }
+
     // 查询农场状态
     async farmStatus(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             const account = await Farm.getUserAccount(e.user_id)
 
             // 渲染MD3风格状态图片
@@ -149,6 +206,10 @@ export default class FarmPlugin extends plugin {
     // 登录农场
     async loginFarm(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             await e.reply('正在获取登录链接，请稍候...')
 
             const result = await this.qrLogin.start(e.user_id, async (status) => {
@@ -196,6 +257,10 @@ export default class FarmPlugin extends plugin {
     // 退出农场
     async logoutFarm(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             const success = await Farm.deleteUserAccount(e.user_id)
 
             if (!success) {
@@ -215,6 +280,10 @@ export default class FarmPlugin extends plugin {
     // 重新登录农场
     async reloginFarm(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             // 先检查是否已登录
             const hasAccount = await Farm.hasUserAccount(e.user_id)
 
@@ -265,6 +334,10 @@ export default class FarmPlugin extends plugin {
     // 开启自动挂机
     async enableAuto(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             const account = await Farm.startUserAccount(e.user_id)
 
             if (!account) {
@@ -284,6 +357,10 @@ export default class FarmPlugin extends plugin {
     // 关闭自动挂机
     async disableAuto(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             const account = await Farm.stopUserAccount(e.user_id)
 
             if (!account) {
@@ -462,35 +539,55 @@ export default class FarmPlugin extends plugin {
 
     // 发送文字帮助
     async sendTextHelp(e) {
-        const msg = `═══ QQ农场插件帮助 ═══
+        let msg = `═══ QQ农场插件帮助 ═══
 
 📱 基础指令：
 #我的农场 - 查看农场状态
 #登录农场 - 扫码登录农场
 #退出农场 - 退出并删除账号
+#重登农场 - 退出并重新登录
 
 ⚙️ 自动挂机：
 #开启自动挂机 - 启动自动挂机
 #关闭自动挂机 - 停止自动挂机
 
-� 掉线推送：
+📡 掉线推送：
 #开启掉线推送 - 在当前群开启掉线提醒
 #关闭掉线推送 - 关闭当前群的掉线提醒
 #掉线推送状态 - 查看推送设置状态
 
-�📋 其他指令：
-#农场账号列表 - 查看所有账号（仅主人）
+📋 其他指令：
+#农场帮助 - 显示本帮助
 
-🔧 主人指令：
+`
+
+        if (e.isMaster) {
+            msg += `🔧 主人指令：
+#农场账号列表 - 查看所有账号
 #设置农场服务器<地址> - 设置服务器地址
+#农场更新 - 更新插件
+#农场下线+QQ - 强制下线用户
+#农场禁止+QQ - 禁止用户使用
+#农场解禁+QQ - 解除用户禁止
+#农场状态+QQ - 查看用户状态
+#农场允许群+群号 - 允许群使用
+#农场拒绝群+群号 - 拒绝群使用
+#农场管理状态 - 查看管理状态
 
-═══════════════════`
+`
+        }
+
+        msg += `═══════════════════`
         await e.reply(msg)
     }
 
     // 开启掉线推送
     async enableOfflineNotify(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             // 必须在群聊中使用
             if (!e.group) {
                 await e.reply('❌ 该指令只能在群聊中使用')
@@ -526,6 +623,10 @@ export default class FarmPlugin extends plugin {
     // 关闭掉线推送
     async disableOfflineNotify(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             // 必须在群聊中使用
             if (!e.group) {
                 await e.reply('❌ 该指令只能在群聊中使用')
@@ -560,6 +661,10 @@ export default class FarmPlugin extends plugin {
     // 查看掉线推送状态
     async offlineNotifyStatus(e) {
         try {
+            // 检查禁止状态
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
             const userId = e.user_id
             const notifyConfig = Config.getOfflineNotifyConfig()
             const groupIds = Config.getUserNotifyGroups(userId)
@@ -642,6 +747,431 @@ export default class FarmPlugin extends plugin {
                 errorMsg = '网络连接失败，请检查网络后重试'
             }
             await e.reply(`❌ 更新失败: ${errorMsg}`)
+            return true
+        }
+    }
+
+    // ========== 主人管理功能 ==========
+
+    // 解析QQ号（支持直接输入或@某人）
+    parseQQ(msg) {
+        if (!msg) return null
+        // 匹配@某人
+        const atMatch = msg.match(/\[CQ:at,qq=(\d+)\]/)
+        if (atMatch) return atMatch[1]
+        // 匹配纯数字QQ号
+        const qqMatch = msg.trim().match(/^(\d+)$/)
+        if (qqMatch) return qqMatch[1]
+        return null
+    }
+
+    // 农场下线+qq - 强制下线指定用户的农场
+    async adminOfflineUser(e) {
+        try {
+            const match = e.msg.match(/^#?农场下线\s*(.+)?$/)
+            const qqParam = match?.[1]?.trim()
+
+            if (!qqParam) {
+                await e.reply('❌ 请指定要下线的QQ号\n格式: 农场下线+QQ号 或 农场下线@某人')
+                return true
+            }
+
+            const targetQQ = this.parseQQ(qqParam)
+            if (!targetQQ) {
+                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                return true
+            }
+
+            // 检查是否是主人
+            if (targetQQ === String(e.self_id)) {
+                await e.reply('❌ 不能对Bot自身执行此操作')
+                return true
+            }
+
+            // 获取用户账号
+            const account = await Farm.getUserAccount(targetQQ)
+            if (!account) {
+                await e.reply(`❌ 用户 ${targetQQ} 没有登录农场`)
+                return true
+            }
+
+            // 删除账号（会停止并删除）
+            const success = await Farm.deleteUserAccount(targetQQ)
+
+            if (success) {
+                await e.reply([
+                    '✅ 已强制下线用户农场\n',
+                    `用户QQ: ${targetQQ}\n`,
+                    `账号ID: ${account.id}\n`,
+                    `账号名: ${account.name}`
+                ])
+            } else {
+                await e.reply(`❌ 下线失败，用户 ${targetQQ} 可能没有登录农场`)
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 强制下线失败:', error)
+            await e.reply(`❌ 操作失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场禁止+qq - 禁止指定用户使用农场
+    async adminBanUser(e) {
+        try {
+            const match = e.msg.match(/^#?农场禁止\s*(.+)?$/)
+            const qqParam = match?.[1]?.trim()
+
+            if (!qqParam) {
+                await e.reply('❌ 请指定要禁止的QQ号\n格式: 农场禁止+QQ号 或 农场禁止@某人')
+                return true
+            }
+
+            const targetQQ = this.parseQQ(qqParam)
+            if (!targetQQ) {
+                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                return true
+            }
+
+            // 检查是否是主人
+            if (targetQQ === String(e.self_id)) {
+                await e.reply('❌ 不能禁止Bot自身')
+                return true
+            }
+
+            // 如果用户已登录，先强制下线
+            const account = await Farm.getUserAccount(targetQQ)
+            if (account) {
+                await Farm.deleteUserAccount(targetQQ)
+            }
+
+            // 添加到禁止列表
+            const isNewBan = Config.banUser(targetQQ)
+
+            await e.reply([
+                isNewBan ? '✅ 已禁止用户使用农场' : '⚠️ 该用户已被禁止',
+                `\n用户QQ: ${targetQQ}`,
+                account ? '\n该用户的农场账号已被强制下线' : ''
+            ])
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 禁止用户失败:', error)
+            await e.reply(`❌ 操作失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场解禁+qq - 解除对指定用户的禁止
+    async adminUnbanUser(e) {
+        try {
+            const match = e.msg.match(/^#?农场解禁\s*(.+)?$/)
+            const qqParam = match?.[1]?.trim()
+
+            if (!qqParam) {
+                await e.reply('❌ 请指定要解禁的QQ号\n格式: 农场解禁+QQ号 或 农场解禁@某人')
+                return true
+            }
+
+            const targetQQ = this.parseQQ(qqParam)
+            if (!targetQQ) {
+                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                return true
+            }
+
+            // 从禁止列表移除
+            const success = Config.unbanUser(targetQQ)
+
+            if (success) {
+                await e.reply([
+                    '✅ 已解除用户禁止\n',
+                    `用户QQ: ${targetQQ}\n`,
+                    '该用户现在可以正常使用农场功能'
+                ])
+            } else {
+                await e.reply(`❌ 用户 ${targetQQ} 不在禁止列表中`)
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 解禁用户失败:', error)
+            await e.reply(`❌ 操作失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场状态+qq - 查看指定用户的农场状态
+    async adminUserStatus(e) {
+        try {
+            const match = e.msg.match(/^#?农场状态\s*(.+)?$/)
+            const qqParam = match?.[1]?.trim()
+
+            // 如果没有指定QQ号，显示所有账号状态
+            if (!qqParam) {
+                return await this.adminAllStatus(e)
+            }
+
+            const targetQQ = this.parseQQ(qqParam)
+            if (!targetQQ) {
+                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                return true
+            }
+
+            // 获取用户账号
+            const account = await Farm.getUserAccount(targetQQ)
+            if (!account) {
+                await e.reply(`❌ 用户 ${targetQQ} 没有登录农场`)
+                return true
+            }
+
+            // 获取账号状态
+            const status = await Farm.getUserAccountStatus(targetQQ)
+            const isBanned = Config.isUserBanned(targetQQ)
+
+            let msg = `═══ 用户农场状态 ═══\n\n`
+            msg += `用户QQ: ${targetQQ}\n`
+            msg += `禁止状态: ${isBanned ? '❌ 已禁止' : '✅ 正常'}\n`
+            msg += `账号ID: ${account.id}\n`
+            msg += `账号名: ${account.name}\n`
+            msg += `平台: ${account.platform}\n`
+            msg += `创建时间: ${new Date(account.createdAt).toLocaleString()}\n\n`
+
+            if (status) {
+                msg += `运行状态: ${status.isRunning ? '🟢 运行中' : '🔴 已停止'}\n`
+                msg += `连接状态: ${status.isConnected ? '🟢 已连接' : '🔴 未连接'}\n`
+                if (status.userState) {
+                    msg += `昵称: ${status.userState.name || '未知'}\n`
+                    msg += `等级: ${status.userState.level || 0}\n`
+                    msg += `金币: ${(status.userState.gold || 0).toLocaleString()}\n`
+                }
+                if (status.stats) {
+                    msg += `收获次数: ${status.stats.harvests || 0}\n`
+                    msg += `偷取次数: ${status.stats.steals || 0}\n`
+                }
+            }
+
+            msg += '\n═══════════════════'
+            await e.reply(msg)
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 查询用户状态失败:', error)
+            await e.reply(`❌ 查询失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 查看所有账号状态（主人）
+    async adminAllStatus(e) {
+        try {
+            const accounts = await Api.getAccounts()
+            const bannedUsers = Config.getBannedUsers()
+
+            if (accounts.length === 0) {
+                await e.reply('当前没有登录的农场账号')
+                return true
+            }
+
+            let msg = `═══ 农场账号总览 [共${accounts.length}个] ═══\n\n`
+
+            let runningCount = 0
+            let connectedCount = 0
+
+            for (const account of accounts) {
+                // 尝试从账号名提取QQ号
+                const userKey = account.name.match(/^(?:user_|qq_)(\d+)_/)?.[1] ||
+                               account.name.match(/^(?:user_|qq_)(\d+)$/)?.[1]
+                const isBanned = userKey ? bannedUsers.includes(userKey) : false
+
+                try {
+                    const status = await Api.getAccountStatus(account.id)
+                    if (status?.isRunning) runningCount++
+                    if (status?.isConnected) connectedCount++
+
+                    msg += `ID: ${account.id}\n`
+                    msg += `名称: ${account.name}\n`
+                    if (userKey) msg += `用户: ${userKey}${isBanned ? ' (已禁止)' : ''}\n`
+                    msg += `状态: ${status?.isRunning ? '🟢' : '🔴'}运行 ${status?.isConnected ? '🟢' : '🔴'}连接\n`
+                    if (status?.userState?.level) {
+                        msg += `等级: ${status.userState.level} 金币: ${(status.userState.gold || 0).toLocaleString()}\n`
+                    }
+                    msg += '\n'
+                } catch (err) {
+                    msg += `ID: ${account.id}\n`
+                    msg += `名称: ${account.name}\n`
+                    msg += `状态: ⚠️ 查询失败\n\n`
+                }
+            }
+
+            msg += `═══════════════════\n`
+            msg += `运行中: ${runningCount}  已连接: ${connectedCount}  已禁止: ${bannedUsers.length}`
+
+            await e.reply(msg)
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取所有状态失败:', error)
+            await e.reply(`❌ 查询失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场允许群+群号 - 允许指定群使用农场（白名单模式）
+    async adminAllowGroup(e) {
+        try {
+            const match = e.msg.match(/^#?农场允许群\s*(.+)?$/)
+            let groupId = match?.[1]?.trim()
+
+            // 如果没有指定群号，使用当前群
+            if (!groupId && e.group_id) {
+                groupId = String(e.group_id)
+            }
+
+            if (!groupId) {
+                await e.reply('❌ 请指定群号，或在群聊中直接使用"农场允许群"')
+                return true
+            }
+
+            // 验证群号格式
+            if (!/^\d+$/.test(groupId)) {
+                await e.reply('❌ 群号格式错误，请输入纯数字群号')
+                return true
+            }
+
+            // 添加到允许列表
+            const isNew = Config.allowGroup(groupId)
+
+            // 尝试获取群名称
+            let groupName = ''
+            try {
+                const group = Bot.pickGroup(groupId)
+                if (group && group.name) {
+                    groupName = group.name
+                }
+            } catch (err) {
+                // 忽略错误
+            }
+
+            await e.reply([
+                isNew ? '✅ 已允许群使用农场' : '⚠️ 该群已在允许列表中',
+                `\n群号: ${groupId}`,
+                groupName ? `\n群名: ${groupName}` : '',
+                '\n\n💡 提示: 开启白名单模式后，只有允许的群才能使用农场功能',
+                '\n使用 "农场管理状态" 查看当前设置'
+            ])
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 允许群使用失败:', error)
+            await e.reply(`❌ 操作失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场拒绝群+群号 - 拒绝指定群使用农场
+    async adminDisallowGroup(e) {
+        try {
+            const match = e.msg.match(/^#?农场拒绝群\s*(.+)?$/)
+            let groupId = match?.[1]?.trim()
+
+            // 如果没有指定群号，使用当前群
+            if (!groupId && e.group_id) {
+                groupId = String(e.group_id)
+            }
+
+            if (!groupId) {
+                await e.reply('❌ 请指定群号，或在群聊中直接使用"农场拒绝群"')
+                return true
+            }
+
+            // 验证群号格式
+            if (!/^\d+$/.test(groupId)) {
+                await e.reply('❌ 群号格式错误，请输入纯数字群号')
+                return true
+            }
+
+            // 从允许列表移除
+            const success = Config.disallowGroup(groupId)
+
+            // 尝试获取群名称
+            let groupName = ''
+            try {
+                const group = Bot.pickGroup(groupId)
+                if (group && group.name) {
+                    groupName = group.name
+                }
+            } catch (err) {
+                // 忽略错误
+            }
+
+            if (success) {
+                await e.reply([
+                    '✅ 已拒绝群使用农场\n',
+                    `群号: ${groupId}`,
+                    groupName ? `\n群名: ${groupName}` : '',
+                    '\n\n该群将无法使用农场功能'
+                ])
+            } else {
+                await e.reply(`❌ 群 ${groupId} 不在允许列表中`)
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 拒绝群使用失败:', error)
+            await e.reply(`❌ 操作失败: ${error.message}`)
+            return true
+        }
+    }
+
+    // 农场管理状态 - 查看管理功能的状态
+    async adminManageStatus(e) {
+        try {
+            const bannedUsers = Config.getBannedUsers()
+            const allowedGroups = Config.getAllowedGroups()
+
+            let msg = '═══ 农场管理状态 ═══\n\n'
+
+            // 禁止用户列表
+            msg += `📋 禁止用户列表 (${bannedUsers.length}人):\n`
+            if (bannedUsers.length === 0) {
+                msg += '  暂无\n'
+            } else {
+                for (const userId of bannedUsers) {
+                    msg += `  • ${userId}\n`
+                }
+            }
+
+            msg += '\n'
+
+            // 允许群列表
+            msg += `📋 允许群列表 (${allowedGroups.length}个):\n`
+            if (allowedGroups.length === 0) {
+                msg += '  所有群都允许（白名单未启用）\n'
+            } else {
+                for (const groupId of allowedGroups) {
+                    // 尝试获取群名称
+                    let groupName = ''
+                    try {
+                        const group = Bot.pickGroup(groupId)
+                        if (group && group.name) {
+                            groupName = ` - ${group.name}`
+                        }
+                    } catch (err) {
+                        // 忽略错误
+                    }
+                    msg += `  • ${groupId}${groupName}\n`
+                }
+                msg += '\n⚠️ 白名单模式已启用，只有以上群可以使用农场'
+            }
+
+            msg += '\n═══════════════════\n'
+            msg += '💡 主人指令:\n'
+            msg += '• 农场下线+QQ - 强制下线用户\n'
+            msg += '• 农场禁止+QQ - 禁止用户使用\n'
+            msg += '• 农场解禁+QQ - 解除用户禁止\n'
+            msg += '• 农场状态+QQ - 查看用户状态\n'
+            msg += '• 农场允许群+群号 - 允许群使用\n'
+            msg += '• 农场拒绝群+群号 - 拒绝群使用'
+
+            await e.reply(msg)
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取管理状态失败:', error)
+            await e.reply(`❌ 查询失败: ${error.message}`)
             return true
         }
     }

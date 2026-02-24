@@ -16,7 +16,9 @@ const defaultConfig = {
         enabled: true, // 是否启用掉线推送功能
         userGroups: {}, // 用户开启推送的群: { userId: [groupId1, groupId2, ...] }
         cooldown: 300 // 推送冷却时间（秒），避免频繁推送
-    }
+    },
+    bannedUsers: [], // 被禁止使用的用户列表: [userId1, userId2, ...]
+    allowedGroups: [] // 允许使用的群列表（空数组表示所有群都允许）: [groupId1, groupId2, ...]
 }
 
 export default class Config {
@@ -136,5 +138,87 @@ export default class Config {
     static isUserNotifyEnabled(userId, groupId) {
         const groups = this.getUserNotifyGroups(userId)
         return groups.includes(groupId)
+    }
+
+    // ========== 用户禁止功能 ==========
+
+    // 获取被禁止的用户列表
+    static getBannedUsers() {
+        return this.load().bannedUsers || []
+    }
+
+    // 禁止用户使用
+    static banUser(userId) {
+        const config = this.load()
+        if (!config.bannedUsers) {
+            config.bannedUsers = []
+        }
+        if (!config.bannedUsers.includes(userId)) {
+            config.bannedUsers.push(userId)
+            this.save(config)
+            return true
+        }
+        return false
+    }
+
+    // 解除用户禁止
+    static unbanUser(userId) {
+        const config = this.load()
+        if (!config.bannedUsers) return false
+        const index = config.bannedUsers.indexOf(userId)
+        if (index > -1) {
+            config.bannedUsers.splice(index, 1)
+            this.save(config)
+            return true
+        }
+        return false
+    }
+
+    // 检查用户是否被禁止
+    static isUserBanned(userId) {
+        const bannedUsers = this.getBannedUsers()
+        return bannedUsers.includes(userId)
+    }
+
+    // ========== 群白名单功能 ==========
+
+    // 获取允许的群列表
+    static getAllowedGroups() {
+        return this.load().allowedGroups || []
+    }
+
+    // 允许群使用
+    static allowGroup(groupId) {
+        const config = this.load()
+        if (!config.allowedGroups) {
+            config.allowedGroups = []
+        }
+        if (!config.allowedGroups.includes(groupId)) {
+            config.allowedGroups.push(groupId)
+            this.save(config)
+            return true
+        }
+        return false
+    }
+
+    // 拒绝群使用
+    static disallowGroup(groupId) {
+        const config = this.load()
+        if (!config.allowedGroups) return false
+        const index = config.allowedGroups.indexOf(groupId)
+        if (index > -1) {
+            config.allowedGroups.splice(index, 1)
+            this.save(config)
+            return true
+        }
+        return false
+    }
+
+    // 检查群是否允许使用（空列表表示所有群都允许）
+    static isGroupAllowed(groupId) {
+        const allowedGroups = this.getAllowedGroups()
+        // 如果白名单为空，表示所有群都允许
+        if (allowedGroups.length === 0) return true
+        return allowedGroups.includes(groupId)
     }
 }

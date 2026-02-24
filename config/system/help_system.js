@@ -99,6 +99,41 @@ export const helpList = [
                 icon: 11,
                 title: "#农场更新",
                 desc: "更新插件到最新版本"
+            },
+            {
+                icon: 12,
+                title: "#农场下线+QQ",
+                desc: "强制下线指定用户"
+            },
+            {
+                icon: 13,
+                title: "#农场禁止+QQ",
+                desc: "禁止用户使用农场"
+            },
+            {
+                icon: 14,
+                title: "#农场解禁+QQ",
+                desc: "解除用户禁止"
+            },
+            {
+                icon: 15,
+                title: "#农场状态+QQ",
+                desc: "查看指定用户状态"
+            },
+            {
+                icon: 16,
+                title: "#农场允许群+群号",
+                desc: "允许群使用农场"
+            },
+            {
+                icon: 17,
+                title: "#农场拒绝群+群号",
+                desc: "拒绝群使用农场"
+            },
+            {
+                icon: 18,
+                title: "#农场管理状态",
+                desc: "查看管理状态"
             }
         ]
     }
