@@ -331,7 +331,7 @@ export const panelManager = {
 }
 
 // 为保持兼容性，代理所有方法调用
-const methods = ['connect', 'disconnect', 'subscribe', 'unsubscribe', 'getPanelData', 'getLands', 'executeAction', 'on', 'off']
+const methods = ['connect', 'disconnect', 'subscribe', 'unsubscribe', 'subscribeAll', 'getUserPanelData', 'getLogs', 'getLands', 'executeAction', 'on', 'off']
 methods.forEach(method => {
     panelManager[method] = (...args) => panelManager.getInstance()[method](...args)
 })
