@@ -10,7 +10,8 @@ export function getConfigData() {
         offlineNotifyCooldown: config.offlineNotify?.cooldown ?? 300,
         bannedUsers: config.bannedUsers || [],
         allowedGroups: config.allowedGroups || [],
-        routeEnabled: config.route?.enabled ?? true
+        routeEnabled: config.route?.enabled ?? true,
+        botBaseUrl: config.route?.botBaseUrl ?? ''
     }
 }
 
@@ -49,8 +50,11 @@ export function setConfigData(data, { Result }) {
         }
 
         // Web面板路由配置
-        if (data.routeEnabled !== undefined) {
-            config.route = { enabled: data.routeEnabled }
+        if (data.routeEnabled !== undefined || data.botBaseUrl !== undefined) {
+            config.route = {
+                enabled: data.routeEnabled ?? config.route?.enabled ?? true,
+                botBaseUrl: data.botBaseUrl ?? config.route?.botBaseUrl ?? ''
+            }
         }
 
         Config.save(config)
@@ -136,6 +140,14 @@ export const schemas = [
         component: "Switch",
         defaultValue: true,
         helpMessage: "是否启用Web面板路由功能，关闭后将无法通过浏览器访问农场面板"
+    },
+    {
+        field: "botBaseUrl",
+        label: "Bot基础地址",
+        component: "Input",
+        required: false,
+        placeholder: "如：https://tsyz.cc:2536 或 http://localhost:2536",
+        helpMessage: "自定义Bot基础地址，用于生成面板链接。如将端口映射到域名，可填写 https://tsyz.cc:2536。为空则自动检测"
     }
 ]
 

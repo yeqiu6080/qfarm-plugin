@@ -23,7 +23,8 @@ const defaultConfig = {
         enabled: true // 是否启用自动更新（每6小时检查一次）
     },
     route: {
-        enabled: true // 是否启用Web面板路由功能
+        enabled: true, // 是否启用Web面板路由功能
+        botBaseUrl: '' // 自定义Bot基础地址（如：https://tsyz.cc:2536），为空则使用自动检测
     }
 }
 
@@ -282,7 +283,7 @@ export default class Config {
 
     // 获取路由配置
     static getRouteConfig() {
-        return this.load().route || { enabled: true }
+        return this.load().route || { enabled: true, botBaseUrl: '' }
     }
 
     // 设置路由配置
@@ -297,5 +298,21 @@ export default class Config {
         const config = this.load()
         // 默认启用
         return config.route?.enabled !== false
+    }
+
+    // 获取Bot基础地址
+    static getBotBaseUrl() {
+        const config = this.load()
+        return config.route?.botBaseUrl || ''
+    }
+
+    // 设置Bot基础地址
+    static setBotBaseUrl(url) {
+        const config = this.load()
+        if (!config.route) {
+            config.route = { enabled: true, botBaseUrl: '' }
+        }
+        config.route.botBaseUrl = url
+        this.save(config)
     }
 }
