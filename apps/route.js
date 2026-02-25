@@ -3,38 +3,74 @@ import { Config, Api } from '../components/index.js'
 import Farm from '../model/Farm.js'
 import { panelManager } from '../model/PanelManager.js'
 import crypto from 'crypto'
+import { BotConfig } from '../../../lib/config/config.js'
 
 // 令牌管理器
 class TokenManager {
     constructor() {
-        this.tokens = new Map() // token -> { userId, createdAt, used }
+        this.tokens = new Map() // token -> { userId, role, createdAt, used }
+        this.sessionTokens = new Map() // sessionToken -> { userId, role, createdAt } (长期有效)
         this.cleanupInterval = setInterval(() => this.cleanup(), 60000) // 每分钟清理过期令牌
     }
 
-    // 生成令牌
-    generate(userId) {
+    // 生成临时令牌（用于初始登录）
+    generate(userId, isMaster = false) {
         const token = crypto.randomBytes(16).toString('hex')
         this.tokens.set(token, {
             userId: String(userId),
+            role: isMaster ? 'master' : 'user',
             createdAt: Date.now(),
             used: false
         })
         return token
     }
 
-    // 验证令牌
-    verify(token) {
-        const data = this.tokens.get(token)
-        if (!data) return null
-        if (data.used) return null
-        if (Date.now() - data.createdAt > 5 * 60 * 1000) { // 5分钟过期
-            this.tokens.delete(token)
-            return null
-        }
-        return data.userId
+    // 生成会话令牌（长期使用，用于记住登录状态）
+    generateSession(userId, isMaster = false) {
+        const token = crypto.randomBytes(32).toString('hex')
+        this.sessionTokens.set(token, {
+            userId: String(userId),
+            role: isMaster ? 'master' : 'user',
+            createdAt: Date.now()
+        })
+        return token
     }
 
-    // 使用令牌
+    // 验证令牌（支持临时令牌和会话令牌）
+    verify(token) {
+        // 先检查临时令牌
+        const tempData = this.tokens.get(token)
+        if (tempData) {
+            if (tempData.used) return null
+            if (Date.now() - tempData.createdAt > 5 * 60 * 1000) { // 5分钟过期
+                this.tokens.delete(token)
+                return null
+            }
+            return {
+                userId: tempData.userId,
+                role: tempData.role,
+                isMaster: tempData.role === 'master'
+            }
+        }
+
+        // 检查会话令牌（7天有效期）
+        const sessionData = this.sessionTokens.get(token)
+        if (sessionData) {
+            if (Date.now() - sessionData.createdAt > 7 * 24 * 60 * 60 * 1000) { // 7天过期
+                this.sessionTokens.delete(token)
+                return null
+            }
+            return {
+                userId: sessionData.userId,
+                role: sessionData.role,
+                isMaster: sessionData.role === 'master'
+            }
+        }
+
+        return null
+    }
+
+    // 使用临时令牌（标记为已使用，但5分钟内仍有效）
     use(token) {
         const data = this.tokens.get(token)
         if (data) {
@@ -44,12 +80,40 @@ class TokenManager {
         }
     }
 
+    // 检查是否是主人
+    isMaster(userId) {
+        const masters = Array.isArray(BotConfig.master) ? BotConfig.master : [BotConfig.master]
+        return masters.includes(String(userId))
+    }
+
+    // 获取用户列表（仅主人可用）
+    async getUserList() {
+        try {
+            const accounts = await Farm.getAllAccounts()
+            return accounts.map(acc => ({
+                userId: acc.userId,
+                id: acc.id,
+                createdAt: acc.createdAt
+            }))
+        } catch (error) {
+            logger.error('[QQ农场路由] 获取用户列表失败:', error)
+            return []
+        }
+    }
+
     // 清理过期令牌
     cleanup() {
         const now = Date.now()
+        // 清理临时令牌
         for (const [token, data] of this.tokens) {
             if (now - data.createdAt > 10 * 60 * 1000) { // 10分钟后彻底删除
                 this.tokens.delete(token)
+            }
+        }
+        // 清理过期会话令牌
+        for (const [token, data] of this.sessionTokens) {
+            if (now - data.createdAt > 7 * 24 * 60 * 60 * 1000) { // 7天后删除
+                this.sessionTokens.delete(token)
             }
         }
     }
@@ -85,6 +149,7 @@ export class FarmRoute {
     async renderPanel(req, res) {
         const urlObj = new URL(req.url, `http://${req.headers.host}`)
         const token = urlObj.searchParams.get('token')
+        const targetUserId = urlObj.searchParams.get('user') // 主人可指定查看其他用户
         
         if (!token) {
             res.writeHead(302, { 'Location': '/qfarm/login' })
@@ -92,8 +157,8 @@ export class FarmRoute {
             return true
         }
 
-        const userId = tokenManager.verify(token)
-        if (!userId) {
+        const auth = tokenManager.verify(token)
+        if (!auth) {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
             res.end(this.getErrorHtml('令牌已过期或无效', '请使用 "#农场面板" 指令获取新的通行令牌'))
             return true
@@ -102,12 +167,28 @@ export class FarmRoute {
         // 标记令牌已使用（但保留会话）
         tokenManager.use(token)
 
+        // 确定要查看的用户ID
+        let viewUserId = auth.userId
+        let isViewingOther = false
+        
+        // 如果是主人且指定了目标用户，则查看他人数据
+        if (auth.isMaster && targetUserId && targetUserId !== auth.userId) {
+            viewUserId = targetUserId
+            isViewingOther = true
+        }
+
         // 获取用户数据
-        const account = await Farm.getUserAccount(userId)
-        const status = account ? await Farm.getUserAccountStatus(userId) : null
+        const account = await Farm.getUserAccount(viewUserId)
+        const status = account ? await Farm.getUserAccountStatus(viewUserId) : null
+        
+        // 如果是主人，获取用户列表供切换
+        let userList = []
+        if (auth.isMaster) {
+            userList = await tokenManager.getUserList()
+        }
 
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        res.end(this.getPanelHtml(userId, account, status))
+        res.end(this.getPanelHtml(viewUserId, account, status, auth, isViewingOther, userList))
         return true
     }
 
@@ -121,17 +202,24 @@ export class FarmRoute {
         // 获取用户状态
         if (path === '/qfarm/api/status') {
             const token = urlObj.searchParams.get('token')
-            const userId = tokenManager.verify(token)
+            const targetUserId = urlObj.searchParams.get('user')
+            const auth = tokenManager.verify(token)
             
-            if (!userId) {
+            if (!auth) {
                 res.writeHead(401)
                 res.end(JSON.stringify({ success: false, message: '未授权' }))
                 return true
             }
 
             try {
-                const account = await Farm.getUserAccount(userId)
-                const status = account ? await Farm.getUserAccountStatus(userId) : null
+                // 主人可以查看他人，普通用户只能看自己
+                let viewUserId = auth.userId
+                if (auth.isMaster && targetUserId) {
+                    viewUserId = targetUserId
+                }
+
+                const account = await Farm.getUserAccount(viewUserId)
+                const status = account ? await Farm.getUserAccountStatus(viewUserId) : null
                 
                 res.writeHead(200)
                 res.end(JSON.stringify({
@@ -143,9 +231,33 @@ export class FarmRoute {
                             name: account.name,
                             createdAt: account.createdAt
                         } : null,
-                        status: status
+                        status: status,
+                        isMaster: auth.isMaster,
+                        isViewingOther: viewUserId !== auth.userId
                     }
                 }))
+            } catch (error) {
+                res.writeHead(500)
+                res.end(JSON.stringify({ success: false, message: error.message }))
+            }
+            return true
+        }
+
+        // 获取用户列表（仅主人）
+        if (path === '/qfarm/api/users') {
+            const token = urlObj.searchParams.get('token')
+            const auth = tokenManager.verify(token)
+            
+            if (!auth || !auth.isMaster) {
+                res.writeHead(403)
+                res.end(JSON.stringify({ success: false, message: '无权限' }))
+                return true
+            }
+
+            try {
+                const users = await tokenManager.getUserList()
+                res.writeHead(200)
+                res.end(JSON.stringify({ success: true, data: { users } }))
             } catch (error) {
                 res.writeHead(500)
                 res.end(JSON.stringify({ success: false, message: error.message }))
@@ -319,16 +431,23 @@ export class FarmRoute {
     async handleLogs(req, res) {
         const urlObj = new URL(req.url, `http://${req.headers.host}`)
         const token = urlObj.searchParams.get('token')
-        const userId = tokenManager.verify(token)
+        const targetUserId = urlObj.searchParams.get('user')
+        const auth = tokenManager.verify(token)
         
-        if (!userId) {
+        if (!auth) {
             res.writeHead(401)
             res.end(JSON.stringify({ success: false, message: '未授权' }))
             return true
         }
 
         try {
-            const account = await Farm.getUserAccount(userId)
+            // 主人可以查看他人，普通用户只能看自己
+            let viewUserId = auth.userId
+            if (auth.isMaster && targetUserId) {
+                viewUserId = targetUserId
+            }
+
+            const account = await Farm.getUserAccount(viewUserId)
             if (!account) {
                 res.writeHead(400)
                 res.end(JSON.stringify({ success: false, message: '未绑定账号' }))
@@ -347,7 +466,10 @@ export class FarmRoute {
                         tag: log.tag,
                         message: log.message,
                         tagClass: this.getLogTagClass(log.tag)
-                    }))
+                    })),
+                    isMaster: auth.isMaster,
+                    isViewingOther: viewUserId !== auth.userId,
+                    viewedUserId: viewUserId
                 }
             }))
         } catch (error) {
@@ -361,18 +483,25 @@ export class FarmRoute {
     async handleLands(req, res) {
         const urlObj = new URL(req.url, `http://${req.headers.host}`)
         const token = urlObj.searchParams.get('token')
-        const userId = tokenManager.verify(token)
+        const targetUserId = urlObj.searchParams.get('user')
+        const auth = tokenManager.verify(token)
         
-        if (!userId) {
+        if (!auth) {
             res.writeHead(401)
             res.end(JSON.stringify({ success: false, message: '未授权' }))
             return true
         }
 
         try {
+            // 主人可以查看他人，普通用户只能看自己
+            let viewUserId = auth.userId
+            if (auth.isMaster && targetUserId) {
+                viewUserId = targetUserId
+            }
+
             const [status, landsData] = await Promise.all([
-                Farm.getUserAccountStatus(userId),
-                panelManager.getLands(userId)
+                Farm.getUserAccountStatus(viewUserId),
+                panelManager.getLands(viewUserId)
             ])
 
             const processedLands = this.processLandsData(landsData)
@@ -391,7 +520,10 @@ export class FarmRoute {
                         dead: processedLands.filter(l => l.statusClass === 'dead').length
                     },
                     userName: status?.userState?.name,
-                    level: status?.userState?.level
+                    level: status?.userState?.level,
+                    isMaster: auth.isMaster,
+                    isViewingOther: viewUserId !== auth.userId,
+                    viewedUserId: viewUserId
                 }
             }))
         } catch (error) {
@@ -405,16 +537,23 @@ export class FarmRoute {
     async handleStats(req, res) {
         const urlObj = new URL(req.url, `http://${req.headers.host}`)
         const token = urlObj.searchParams.get('token')
-        const userId = tokenManager.verify(token)
+        const targetUserId = urlObj.searchParams.get('user')
+        const auth = tokenManager.verify(token)
         
-        if (!userId) {
+        if (!auth) {
             res.writeHead(401)
             res.end(JSON.stringify({ success: false, message: '未授权' }))
             return true
         }
 
         try {
-            const status = await Farm.getUserAccountStatus(userId)
+            // 主人可以查看他人，普通用户只能看自己
+            let viewUserId = auth.userId
+            if (auth.isMaster && targetUserId) {
+                viewUserId = targetUserId
+            }
+
+            const status = await Farm.getUserAccountStatus(viewUserId)
             if (!status) {
                 res.writeHead(400)
                 res.end(JSON.stringify({ success: false, message: '未绑定账号' }))
@@ -466,7 +605,10 @@ export class FarmRoute {
                     efficiency,
                     userName: status.userState?.name,
                     level: status.userState?.level,
-                    gold: status.userState?.gold || 0
+                    gold: status.userState?.gold || 0,
+                    isMaster: auth.isMaster,
+                    isViewingOther: viewUserId !== auth.userId,
+                    viewedUserId: viewUserId
                 }
             }))
         } catch (error) {
@@ -642,7 +784,7 @@ export class FarmRoute {
     }
 
     // 获取面板HTML
-    getPanelHtml(userId, account, status) {
+    getPanelHtml(userId, account, status, auth = null, isViewingOther = false, userList = []) {
         const isLoggedIn = !!account
         const isRunning = status?.isRunning || false
         const isConnected = status?.isConnected || false
@@ -651,6 +793,23 @@ export class FarmRoute {
         const gold = (status?.userState?.gold || 0).toLocaleString()
         const harvests = status?.stats?.harvests || 0
         const steals = status?.stats?.steals || 0
+        const isMaster = auth?.isMaster || false
+        
+        // 生成用户选择下拉框（仅主人）
+        let userSelectHtml = ''
+        if (isMaster && userList.length > 0) {
+            const options = userList.map(u => 
+                `<option value="${u.userId}" ${u.userId === userId ? 'selected' : ''}>${u.id} (QQ: ${u.userId})</option>`
+            ).join('')
+            userSelectHtml = `
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 14px; color: var(--md-sys-color-secondary); display: block; margin-bottom: 8px;">切换用户查看</label>
+                <select id="userSelect" onchange="switchUser(this.value)" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--md-sys-color-outline); background: var(--md-sys-color-surface); font-size: 14px;">
+                    <option value="${auth.userId}">自己 (${auth.userId})</option>
+                    ${options}
+                </select>
+            </div>`
+        }
 
         return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -799,6 +958,26 @@ export class FarmRoute {
         .badge-warning {
             background: #FFF3E0;
             color: var(--md-sys-color-warning);
+        }
+
+        .badge-master {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .viewing-other-banner {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .viewing-other-banner .material-icons {
+            font-size: 20px;
         }
 
         .btn {
@@ -1201,12 +1380,27 @@ export class FarmRoute {
 <body>
     <div class="app-bar">
         <span class="material-icons">agriculture</span>
-        <h1>QQ农场</h1>
+        <h1>QQ农场 ${isMaster ? '<span style="font-size:14px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:12px;margin-left:8px;">主人模式</span>' : ''}</h1>
         <span class="material-icons">account_circle</span>
     </div>
 
     <div class="container">
         ${isLoggedIn ? `
+        ${isViewingOther ? `
+        <!-- 查看他人提示 -->
+        <div class="viewing-other-banner">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="material-icons">visibility</span>
+                <span>正在查看用户 ${userId} 的数据</span>
+            </div>
+            <button onclick="switchUser('${auth.userId}')" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;">
+                返回自己
+            </button>
+        </div>
+        ` : ''}
+
+        ${userSelectHtml}
+
         <!-- 状态概览 -->
         <div class="card">
             <div class="card-title">
@@ -1416,6 +1610,17 @@ export class FarmRoute {
             } catch (error) {
                 showToast('网络错误');
             }
+        }
+
+        // 切换用户（仅主人）
+        function switchUser(targetUserId) {
+            const url = new URL(window.location.href);
+            if (targetUserId === '${auth?.userId || ''}') {
+                url.searchParams.delete('user');
+            } else {
+                url.searchParams.set('user', targetUserId);
+            }
+            window.location.href = url.toString();
         }
 
         // 显示日志
@@ -1636,19 +1841,29 @@ export class FarmRoutePlugin extends plugin {
                 return true
             }
 
-            // 生成令牌
-            const token = tokenManager.generate(e.user_id)
-            
+            // 检查是否是主人
+            const isMaster = tokenManager.isMaster(e.user_id)
+
+            // 生成令牌（主人有额外权限）
+            const token = tokenManager.generate(e.user_id, isMaster)
+
             // 构建面板URL
             const panelUrl = `http://${e.bot?.server?.hostname || 'localhost'}:${e.bot?.server?.port || 2536}/qfarm?token=${token}`
 
-            await e.reply([
+            let msg = [
                 '═══ QQ农场面板 ═══\n\n',
                 `🔗 面板地址:\n${panelUrl}\n\n`,
                 '⏰ 令牌有效期: 5分钟\n',
                 '💡 提示: 点击链接即可打开MD3风格面板\n',
                 '   可管理农场账号、设置挂机项目等'
-            ], { recallMsg: 60 })
+            ]
+
+            // 主人额外提示
+            if (isMaster) {
+                msg.push('\n👑 主人模式: 可查看所有用户数据')
+            }
+
+            await e.reply(msg, { recallMsg: 60 })
 
             return true
         } catch (error) {

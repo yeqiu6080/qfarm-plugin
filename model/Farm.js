@@ -6,6 +6,23 @@ export default class Farm {
         return `qq_${userId}`
     }
 
+    // 获取所有账号（用于主人查看）
+    static async getAllAccounts() {
+        try {
+            const accounts = await Api.getAccounts()
+            return accounts.filter(acc => acc.userId).map(acc => ({
+                userId: acc.userId,
+                id: acc.id,
+                name: acc.name,
+                createdAt: acc.createdAt,
+                isRunning: acc.isRunning
+            }))
+        } catch (error) {
+            logger.error('[QQ农场] 获取所有账号失败:', error)
+            return []
+        }
+    }
+
     // 获取用户绑定的账号
     static async getUserAccount(userId) {
         const accounts = await Api.getAccounts()
