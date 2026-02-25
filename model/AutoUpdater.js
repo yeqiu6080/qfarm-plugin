@@ -16,8 +16,9 @@ export default class AutoUpdater {
 
     /**
      * 启动自动更新
+     * @param {boolean} immediate - 是否立即执行一次，默认false（避免启动时阻塞）
      */
-    start() {
+    start(immediate = false) {
         // 检查是否启用
         if (!this.isEnabled()) {
             return
@@ -29,8 +30,13 @@ export default class AutoUpdater {
         // 计算间隔毫秒数
         const intervalMs = this.intervalHours * 60 * 60 * 1000
 
-        // 立即执行一次
-        this.checkAndUpdate()
+        // 延迟执行第一次更新（避免启动时阻塞）
+        // 默认延迟5分钟后执行，如果immediate为true则立即执行
+        const firstDelay = immediate ? 0 : 5 * 60 * 1000
+
+        setTimeout(() => {
+            this.checkAndUpdate()
+        }, firstDelay)
 
         // 设置定时任务
         this.interval = setInterval(() => {
