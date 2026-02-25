@@ -319,5 +319,19 @@ export default class PanelManager {
     }
 }
 
-// 导出单例
-export const panelManager = new PanelManager()
+// 导出单例（延迟初始化，避免模块加载时阻塞）
+let panelManagerInstance = null
+export const panelManager = {
+    getInstance() {
+        if (!panelManagerInstance) {
+            panelManagerInstance = new PanelManager()
+        }
+        return panelManagerInstance
+    }
+}
+
+// 为保持兼容性，代理所有方法调用
+const methods = ['connect', 'disconnect', 'subscribe', 'unsubscribe', 'getPanelData', 'getLands', 'executeAction', 'on', 'off']
+methods.forEach(method => {
+    panelManager[method] = (...args) => panelManager.getInstance()[method](...args)
+})

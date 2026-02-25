@@ -5,9 +5,16 @@ export default class QrLogin {
     constructor() {
         this.sessions = new Map() // userId -> { sessionId, startTime, isProcessing }
         this.sessionTimeout = 10 * 60 * 1000 // 10分钟超时
-        
-        // 启动会话清理定时器（每5分钟清理一次过期会话）
-        this.cleanupInterval = setInterval(() => this.cleanupExpiredSessions(), 5 * 60 * 1000)
+        this.cleanupInterval = null
+    }
+
+    /**
+     * 启动会话清理定时器
+     */
+    startCleanupTimer() {
+        if (!this.cleanupInterval) {
+            this.cleanupInterval = setInterval(() => this.cleanupExpiredSessions(), 5 * 60 * 1000)
+        }
     }
 
     // 清理过期会话，防止内存泄漏

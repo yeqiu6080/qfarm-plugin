@@ -140,6 +140,10 @@ export default class FarmPlugin extends plugin {
 
         // 初始化扫码登录管理器
         this.qrLogin = new QrLogin()
+        // 延迟启动清理定时器
+        setTimeout(() => {
+            this.qrLogin.startCleanupTimer()
+        }, 60000)
 
         // 初始化掉线推送监控（机器人启动完成后再启动，避免插件加载阻塞）
         this.offlineMonitor = new OfflineMonitor()
