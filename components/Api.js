@@ -251,4 +251,159 @@ export default class Api {
             return null
         }
     }
+
+    // ========== 任务系统 API ==========
+
+    // 获取任务列表
+    static async getTasks(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/tasks`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 领取单个任务
+    static async claimTask(accountId, taskId) {
+        try {
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/tasks/${taskId}/claim`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 一键领取所有任务
+    static async claimAllTasks(accountId) {
+        try {
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/tasks/claim-all`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // ========== 种植策略 API ==========
+
+    // 获取所有可用策略
+    static async getStrategies() {
+        try {
+            const response = await HttpClient.get(this.buildUrl('/api/strategies'))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 获取账号策略状态
+    static async getAccountStrategy(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/strategy`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 设置种植策略
+    static async setAccountStrategy(accountId, strategy, preferredSeedId = null, settings = {}) {
+        try {
+            const data = { strategy, ...settings }
+            if (preferredSeedId) data.preferredSeedId = preferredSeedId
+            const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/strategy`), data)
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // ========== 数据分析 API ==========
+
+    // 获取种植效率排行榜
+    static async getLeaderboard(options = {}) {
+        try {
+            const params = new URLSearchParams()
+            if (options.lands) params.append('lands', options.lands)
+            if (options.level) params.append('level', options.level)
+            if (options.sortBy) params.append('sortBy', options.sortBy)
+            if (options.fertilizer) params.append('fertilizer', options.fertilizer)
+            if (options.limit) params.append('limit', options.limit)
+
+            const query = params.toString() ? `?${params.toString()}` : ''
+            const response = await HttpClient.get(this.buildUrl(`/api/analytics/leaderboard${query}`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 获取种植推荐
+    static async getRecommendation(level = 1, lands = 18, strategy = 'exp') {
+        try {
+            const response = await HttpClient.get(
+                this.buildUrl(`/api/analytics/recommendation?level=${level}&lands=${lands}&strategy=${strategy}`)
+            )
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 获取种子详情
+    static async getSeedDetails(seedId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/analytics/seeds/${seedId}`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 比较多个种子
+    static async compareSeeds(seedIds) {
+        try {
+            const response = await HttpClient.post(this.buildUrl('/api/analytics/compare'), { seedIds })
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // ========== 好友优化 API ==========
+
+    // 获取好友优化器状态
+    static async getFriendOptimizer(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/friend-optimizer`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 设置静默时段
+    static async setQuietHours(accountId, enabled, startHour = 23, endHour = 7) {
+        try {
+            const response = await HttpClient.post(
+                this.buildUrl(`/api/accounts/${accountId}/friend-optimizer/quiet-hours`),
+                { enabled, startHour, endHour }
+            )
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 清除访问统计
+    static async clearFriendStats(accountId) {
+        try {
+            const response = await HttpClient.post(
+                this.buildUrl(`/api/accounts/${accountId}/friend-optimizer/clear-stats`)
+            )
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
 }

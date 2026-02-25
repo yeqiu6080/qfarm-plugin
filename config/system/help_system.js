@@ -117,6 +117,111 @@ export const helpList = [
         ]
     },
     {
+        group: "任务系统",
+        list: [
+            {
+                icon: 28,
+                title: "#农场任务",
+                desc: "查看任务列表"
+            },
+            {
+                icon: 29,
+                title: "#一键领取",
+                desc: "领取所有任务奖励"
+            },
+            {
+                icon: 30,
+                title: "#领取任务 ID",
+                desc: "领取指定任务"
+            }
+        ]
+    },
+    {
+        group: "每日奖励",
+        list: [
+            {
+                icon: 31,
+                title: "#每日奖励",
+                desc: "查看奖励状态"
+            },
+            {
+                icon: 32,
+                title: "#领取奖励",
+                desc: "手动领取奖励"
+            }
+        ]
+    },
+    {
+        group: "土地操作",
+        list: [
+            {
+                icon: 33,
+                title: "#解锁土地 ID",
+                desc: "解锁指定土地"
+            },
+            {
+                icon: 34,
+                title: "#升级土地 ID",
+                desc: "升级指定土地"
+            }
+        ]
+    },
+    {
+        group: "种植策略",
+        list: [
+            {
+                icon: 35,
+                title: "#种植策略",
+                desc: "查看当前策略"
+            },
+            {
+                icon: 36,
+                title: "#策略列表",
+                desc: "查看可用策略"
+            },
+            {
+                icon: 37,
+                title: "#设置策略",
+                desc: "切换种植策略"
+            }
+        ]
+    },
+    {
+        group: "数据分析",
+        list: [
+            {
+                icon: 38,
+                title: "#种植排行",
+                desc: "效率排行榜"
+            },
+            {
+                icon: 39,
+                title: "#种植推荐",
+                desc: "作物种植推荐"
+            },
+            {
+                icon: 40,
+                title: "#种子详情 ID",
+                desc: "查看种子信息"
+            }
+        ]
+    },
+    {
+        group: "好友优化",
+        list: [
+            {
+                icon: 41,
+                title: "#好友优化",
+                desc: "查看优化状态"
+            },
+            {
+                icon: 42,
+                title: "#设置静默",
+                desc: "设置静默时段"
+            }
+        ]
+    },
+    {
         group: "Web面板",
         auth: "master",
         list: [
@@ -190,6 +295,16 @@ export const helpList = [
                 icon: 18,
                 title: "#农场管理状态",
                 desc: "查看管理状态"
+            },
+            {
+                icon: 43,
+                title: "#启动全部",
+                desc: "启动所有账号"
+            },
+            {
+                icon: 44,
+                title: "#停止全部",
+                desc: "停止所有账号"
             }
         ]
     }
