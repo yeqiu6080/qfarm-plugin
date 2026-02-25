@@ -82,6 +82,36 @@ export const helpList = [
         ]
     },
     {
+        group: "面板功能",
+        list: [
+            {
+                icon: 19,
+                title: "#农场面板",
+                desc: "查看综合面板"
+            },
+            {
+                icon: 20,
+                title: "#农场日志",
+                desc: "查看运行日志"
+            },
+            {
+                icon: 21,
+                title: "#农场土地",
+                desc: "查看土地详情"
+            },
+            {
+                icon: 22,
+                title: "#农场统计",
+                desc: "查看统计数据"
+            },
+            {
+                icon: 23,
+                title: "#农场操作",
+                desc: "执行手动操作"
+            }
+        ]
+    },
+    {
         group: "主人指令",
         auth: "master",
         list: [
