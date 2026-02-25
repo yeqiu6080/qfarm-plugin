@@ -450,25 +450,67 @@ export default class FarmPlugin extends plugin {
     async accountList(e) {
         try {
             const accounts = await Api.getAccounts()
+            const bannedUsers = Config.getBannedUsers()
 
             if (accounts.length === 0) {
                 await MessageHelper.reply(e, '当前没有登录的农场账号', { recallTime: 15 })
                 return true
             }
 
-            let msg = `═══ 农场账号列表 [共${accounts.length}个] ═══\n`
-            for (const account of accounts) {
-                const userKey = account.name.match(/^(qq_\d+)_/)?.[1]
-                const userId = userKey ? userKey.replace('qq_', '') : '未知'
-                msg += `\nID: ${account.id}\n`
-                msg += `名称: ${account.name}\n`
-                msg += `用户: ${userId}\n`
-                msg += `平台: ${account.platform}\n`
-                msg += `创建: ${new Date(account.createdAt).toLocaleString()}\n`
-            }
-            msg += '\n══════════════════'
+            // 处理账号数据
+            const accountList = []
+            let runningCount = 0
+            let bannedCount = 0
 
-            await MessageHelper.reply(e, msg, { recallTime: 45 })
+            for (const account of accounts) {
+                // 从账号名提取QQ号
+                const userKey = account.name.match(/^(?:user_|qq_)(\d+)_/)?.[1] ||
+                               account.name.match(/^(?:user_|qq_)(\d+)$/)?.[1]
+                const userId = userKey || '未知'
+                const isBanned = userKey ? bannedUsers.includes(userKey) : false
+
+                let status = { isRunning: false, isConnected: false, level: 0, gold: 0 }
+                try {
+                    status = await Api.getAccountStatus(account.id)
+                    if (status?.isRunning) runningCount++
+                } catch (err) {
+                    // 忽略查询失败
+                }
+
+                if (isBanned) bannedCount++
+
+                accountList.push({
+                    id: account.id,
+                    name: account.name,
+                    userId: userId,
+                    platform: account.platform,
+                    createdAt: new Date(account.createdAt).toLocaleString('zh-CN', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
+                    isRunning: status?.isRunning || false,
+                    isConnected: status?.isConnected || false,
+                    level: status?.userState?.level || 0,
+                    gold: (status?.userState?.gold || 0).toLocaleString(),
+                    isBanned: isBanned
+                })
+            }
+
+            // 渲染账号列表图片
+            const img = await Renderer.render('accountList/index', {
+                accounts: accountList,
+                totalCount: accounts.length,
+                runningCount: runningCount,
+                bannedCount: bannedCount
+            }, { scale: 1.2 })
+
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
+            }
             return true
         } catch (error) {
             logger.error('[QQ农场] 获取账号列表失败:', error)
@@ -902,7 +944,12 @@ export default class FarmPlugin extends plugin {
     async adminUserStatus(e) {
         try {
             const match = e.msg.match(/^#?农场状态\s*(.+)?$/)
-            const qqParam = match?.[1]?.trim()
+            let qqParam = match?.[1]?.trim()
+
+            // 如果没有指定QQ号，检查是否有@某人
+            if (!qqParam && e.at) {
+                qqParam = String(e.at)
+            }
 
             // 如果没有指定QQ号，显示所有账号状态
             if (!qqParam) {

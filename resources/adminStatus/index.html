@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="preload" href="{{_res_path}}common/font/FZB.woff" as="font">
+  <link rel="stylesheet" type="text/css" href="{{_res_path}}common/common.css" />
+  <title>用户农场状态</title>
+  <style>
+    body {
+      width: 550px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    .container {
+      padding: 20px;
+      width: 550px;
+      box-sizing: border-box;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 2px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 24px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      margin: 0;
+    }
+    .header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin: 10px 0 0 0;
+    }
+    .user-profile {
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: white;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .profile-info {
+      flex: 1;
+    }
+    .profile-qq {
+      font-size: 20px;
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .profile-status {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-banned {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    .badge-normal {
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+    }
+    .badge-running {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+    .badge-stopped {
+      background: rgba(156, 163, 175, 0.2);
+      color: #9ca3af;
+    }
+    .badge-connected {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+    .badge-disconnected {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    .info-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .info-label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+    }
+    .info-value {
+      font-size: 13px;
+      color: #fff;
+      font-weight: 500;
+    }
+    .info-value.gold {
+      color: #fbbf24;
+    }
+    .info-value.level {
+      color: #60a5fa;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stat-value.harvest {
+      color: #4ade80;
+    }
+    .stat-value.steal {
+      color: #f472b6;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+    .empty-text {
+      font-size: 16px;
+      color: rgba(255,255,255,0.7);
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body style="transform: scale(1.2); transform-origin: left top;">
+  <div class="container">
+    <div class="header">
+      <h1>👤 用户农场状态</h1>
+      <p>查看指定用户的农场详细信息</p>
+    </div>
+
+    {{if !hasAccount}}
+    <div class="empty-state">
+      <div class="empty-icon">🌱</div>
+      <div class="empty-text">该用户尚未登录农场</div>
+    </div>
+    {{else}}
+    <div class="user-profile">
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <img src="https://q.qlogo.cn/g?b=qq&s=100&nk={{userId}}" alt="头像" />
+        </div>
+        <div class="profile-info">
+          <div class="profile-qq">QQ: {{userId}}</div>
+          <div class="profile-status">
+            {{if isBanned}}
+            <span class="status-badge badge-banned">已禁止</span>
+            {{else}}
+            <span class="status-badge badge-normal">正常</span>
+            {{/if}}
+            {{if isRunning}}
+            <span class="status-badge badge-running">运行中</span>
+            {{else}}
+            <span class="status-badge badge-stopped">已停止</span>
+            {{/if}}
+            {{if isConnected}}
+            <span class="status-badge badge-connected">已连接</span>
+            {{else}}
+            <span class="status-badge badge-disconnected">未连接</span>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <div class="section-title">📋 账号信息</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">账号ID</span>
+            <span class="info-value">{{accountId}}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">账号名称</span>
+            <span class="info-value">{{accountName}}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">平台</span>
+            <span class="info-value">{{platform}}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">创建时间</span>
+            <span class="info-value">{{createdAt}}</span>
+          </div>
+        </div>
+      </div>
+
+      {{if hasStatus}}
+      <div class="info-section">
+        <div class="section-title">🎮 游戏状态</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">昵称</span>
+            <span class="info-value">{{userName}}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">等级</span>
+            <span class="info-value level">Lv.{{level}}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">金币</span>
+            <span class="info-value gold">{{gold}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value harvest">{{harvests}}</div>
+          <div class="stat-label">收获次数</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value steal">{{steals}}</div>
+          <div class="stat-label">偷取次数</div>
+        </div>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      {{@sys.copyright}}
+    </div>
+  </div>
+</body>
+</html>

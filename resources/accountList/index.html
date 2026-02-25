@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="preload" href="{{_res_path}}common/font/FZB.woff" as="font">
+  <link rel="stylesheet" type="text/css" href="{{_res_path}}common/common.css" />
+  <title>农场账号列表</title>
+  <style>
+    body {
+      width: 650px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+    .container {
+      padding: 20px;
+      width: 650px;
+      box-sizing: border-box;
+    }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      border-bottom: 2px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 28px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      margin: 0;
+    }
+    .header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin: 10px 0 0 0;
+    }
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+    .stats-item {
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    .stats-value {
+      font-size: 24px;
+      color: #4ade80;
+      font-weight: bold;
+    }
+    .stats-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 4px;
+    }
+    .account-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .account-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
+    }
+    .account-card:hover {
+      background: rgba(255,255,255,0.12);
+      transform: translateY(-2px);
+    }
+    .account-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .account-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+      overflow: hidden;
+    }
+    .account-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .account-info {
+      flex: 1;
+    }
+    .account-name {
+      font-size: 16px;
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .account-id {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .account-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-running {
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+    }
+    .status-stopped {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .status-dot.running {
+      background: #4ade80;
+      box-shadow: 0 0 6px #4ade80;
+    }
+    .status-dot.stopped {
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef4444;
+    }
+    .account-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .detail-item {
+      text-align: center;
+    }
+    .detail-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      font-size: 14px;
+      color: #fff;
+    }
+    .detail-value.gold {
+      color: #fbbf24;
+    }
+    .detail-value.level {
+      color: #60a5fa;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    .empty-text {
+      font-size: 18px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+    .empty-hint {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .banned-badge {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body style="transform: scale(1.2); transform-origin: left top;">
+  <div class="container">
+    <div class="header">
+      <h1>📋 农场账号列表</h1>
+      <p>所有登录的农场账号信息</p>
+    </div>
+
+    {{if accounts.length === 0}}
+    <div class="empty-state">
+      <div class="empty-icon">🌱</div>
+      <div class="empty-text">暂无农场账号</div>
+      <div class="empty-hint">使用 #登录农场 添加账号</div>
+    </div>
+    {{else}}
+    <div class="stats-bar">
+      <div class="stats-item">
+        <div class="stats-value">{{totalCount}}</div>
+        <div class="stats-label">总账号数</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" style="color: #4ade80;">{{runningCount}}</div>
+        <div class="stats-label">运行中</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" style="color: #fbbf24;">{{bannedCount}}</div>
+        <div class="stats-label">已禁止</div>
+      </div>
+    </div>
+
+    <div class="account-list">
+      {{each accounts account}}
+      <div class="account-card">
+        <div class="account-header">
+          <div class="account-avatar">
+            <img src="https://q.qlogo.cn/g?b=qq&s=100&nk={{account.userId}}" alt="头像" />
+          </div>
+          <div class="account-info">
+            <div class="account-name">
+              {{account.userId}}
+              {{if account.isBanned}}
+              <span class="banned-badge">已禁止</span>
+              {{/if}}
+            </div>
+            <div class="account-id">ID: {{account.id}}</div>
+          </div>
+          <div class="account-status {{account.isRunning ? 'status-running' : 'status-stopped'}}">
+            <div class="status-dot {{account.isRunning ? 'running' : 'stopped'}}"></div>
+            {{account.isRunning ? '运行中' : '已停止'}}
+          </div>
+        </div>
+        <div class="account-details">
+          <div class="detail-item">
+            <div class="detail-label">等级</div>
+            <div class="detail-value level">Lv.{{account.level || 0}}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">金币</div>
+            <div class="detail-value gold">{{account.gold || 0}}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">创建时间</div>
+            <div class="detail-value">{{account.createdAt}}</div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      {{@sys.copyright}}
+    </div>
+  </div>
+</body>
+</html>
