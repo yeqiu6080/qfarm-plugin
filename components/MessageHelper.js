@@ -34,13 +34,14 @@ export default class MessageHelper {
 
             // 如果是群聊且设置了撤回时间，则自动撤回
             if (isGroup && recallTime > 0 && result) {
+                let rect = recallTime*1000
                 setTimeout(async () => {
                     try {
                         await this.recallMessage(e, result)
                     } catch (err) {
                         logger.debug('[MessageHelper] 撤回消息失败:', err.message)
                     }
-                }, recallTime * 1000)
+                }, rect )
             }
 
             return result
