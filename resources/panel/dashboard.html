@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>农场面板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+      min-height: 100vh;
+      padding: 20px;
+      width: 600px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* 顶部标题栏 */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 24px;
+      color: white;
+      position: relative;
+    }
+    
+    .header-title {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .header-icon {
+      font-size: 32px;
+    }
+    
+    .header-subtitle {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-top: 6px;
+      margin-left: 44px;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 10px #4ade80;
+    }
+    
+    .status-dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 10px #ef4444;
+    }
+
+    /* 用户信息卡片 */
+    .user-card {
+      margin: -20px 20px 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .user-info {
+      flex: 1;
+    }
+    
+    .user-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    
+    .user-level {
+      font-size: 14px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      color: #1e293b;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    
+    .gold-badge {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #1e293b;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 快捷统计 */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 0 20px 20px;
+    }
+    
+    .quick-stat {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px 8px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .quick-stat:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    .quick-stat-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .quick-stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    
+    .quick-stat-label {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    /* 土地状态 */
+    .land-section {
+      padding: 0 20px 20px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .land-status {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .land-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(34, 197, 94, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .land-info {
+      flex: 1;
+    }
+    
+    .land-text {
+      font-size: 14px;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+    
+    .land-detail {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .land-action {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* 最近日志 */
+    .logs-section {
+      padding: 0 20px 20px;
+    }
+    
+    .logs-list {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .log-item:last-child {
+      border-bottom: none;
+    }
+    
+    .log-time {
+      font-size: 11px;
+      color: #64748b;
+      min-width: 40px;
+      font-family: monospace;
+    }
+    
+    .log-tag {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      min-width: 40px;
+      text-align: center;
+    }
+    
+    .log-tag.farm {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+    
+    .log-tag.friend {
+      background: rgba(244, 114, 182, 0.15);
+      color: #f472b6;
+    }
+    
+    .log-tag.system {
+      background: rgba(96, 165, 250, 0.15);
+      color: #60a5fa;
+    }
+    
+    .log-message {
+      flex: 1;
+      font-size: 12px;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 快捷操作 */
+    .actions-section {
+      padding: 0 20px 20px;
+    }
+    
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .action-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .action-label {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    /* 底部 */
+    .footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 空状态 */
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">
+        <span class="header-icon">🌾</span>
+        <span>农场面板</span>
+      </div>
+      <div class="header-subtitle">QQ农场共享版管理插件</div>
+      <div class="status-badge">
+        <div class="status-dot {{isRunning ? '' : 'offline'}}"></div>
+        <span>{{isRunning ? '运行中' : '已停止'}}</span>
+      </div>
+    </div>
+    
+    <div class="user-card">
+      <div class="user-header">
+        <div class="avatar">
+          <img src="https://q.qlogo.cn/g?b=qq&s=100&nk={{userId}}" alt="头像" />
+        </div>
+        <div class="user-info">
+          <div class="user-name">{{userName}}</div>
+          <div class="user-level">
+            <span class="level-badge">Lv.{{level}}</span>
+            <span>{{isConnected ? '🟢 在线' : '🔴 离线'}}</span>
+          </div>
+        </div>
+        <div class="gold-badge">
+          <span>💰</span>
+          <span>{{gold}}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="quick-stats">
+      <div class="quick-stat">
+        <div class="quick-stat-icon">🌾</div>
+        <div class="quick-stat-value">{{harvests}}</div>
+        <div class="quick-stat-label">收获</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-icon">🤏</div>
+        <div class="quick-stat-value">{{steals}}</div>
+        <div class="quick-stat-label">偷取</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-icon">🤝</div>
+        <div class="quick-stat-value">{{helps}}</div>
+        <div class="quick-stat-label">帮助</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-icon">🌱</div>
+        <div class="quick-stat-value">{{matureCount}}/{{totalLands}}</div>
+        <div class="quick-stat-label">可收/总</div>
+      </div>
+    </div>
+    
+    {{if matureCount > 0}}
+    <div class="land-section">
+      <div class="section-title">
+        <span>🌱</span>
+        <span>土地状态</span>
+      </div>
+      <div class="land-status">
+        <div class="land-icon">✨</div>
+        <div class="land-info">
+          <div class="land-text">有 {{matureCount}} 块土地可以收获了！</div>
+          <div class="land-detail">自动挂机将自动收获</div>
+        </div>
+        <div class="land-action">可收获</div>
+      </div>
+    </div>
+    {{/if}}
+    
+    <div class="logs-section">
+      <div class="section-title">
+        <span>📋</span>
+        <span>最近日志</span>
+      </div>
+      <div class="logs-list">
+        {{if logs && logs.length > 0}}
+          {{each logs log}}
+          <div class="log-item">
+            <div class="log-time">{{log.time}}</div>
+            <div class="log-tag {{log.tag === '农场' ? 'farm' : (log.tag === '好友' ? 'friend' : 'system')}}">{{log.tag}}</div>
+            <div class="log-message">{{log.message}}</div>
+          </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div class="empty-text">暂无日志</div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+    
+    <div class="actions-section">
+      <div class="section-title">
+        <span>⚡</span>
+        <span>快捷操作</span>
+      </div>
+      <div class="actions-grid">
+        <div class="action-btn">
+          <div class="action-icon">📋</div>
+          <div class="action-label">查看日志</div>
+        </div>
+        <div class="action-btn">
+          <div class="action-icon">🌱</div>
+          <div class="action-label">土地详情</div>
+        </div>
+        <div class="action-btn">
+          <div class="action-icon">📊</div>
+          <div class="action-label">统计数据</div>
+        </div>
+      </

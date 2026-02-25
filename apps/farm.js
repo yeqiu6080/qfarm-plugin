@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config, Api, Renderer, MessageHelper } from '../components/index.js'
-import { Farm, QrLogin, OfflineMonitor } from '../model/index.js'
+import { Farm, QrLogin, OfflineMonitor, panelManager } from '../model/index.js'
 
 export default class FarmPlugin extends plugin {
     constructor() {
@@ -98,6 +98,27 @@ export default class FarmPlugin extends plugin {
                     reg: '^#?农场管理状态$',
                     fnc: 'adminManageStatus',
                     permission: 'master'
+                },
+                // ========== 面板功能 ==========
+                {
+                    reg: '^#?(农场日志|我的农场日志)$',
+                    fnc: 'farmLogs'
+                },
+                {
+                    reg: '^#?(农场土地|我的土地|土地详情)$',
+                    fnc: 'farmLands'
+                },
+                {
+                    reg: '^#?(农场统计|我的统计)$',
+                    fnc: 'farmStats'
+                },
+                {
+                    reg: '^#?(农场面板|我的面板)$',
+                    fnc: 'farmPanel'
+                },
+                {
+                    reg: '^#?(农场操作|执行操作)$',
+                    fnc: 'farmAction'
                 }
             ]
         })
@@ -1232,5 +1253,372 @@ export default class FarmPlugin extends plugin {
             await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
+    }
+
+    // ========== 面板功能 ==========
+
+    // 农场日志面板
+    async farmLogs(e) {
+        try {
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
+            const panelData = await panelManager.getUserPanelData(e.user_id)
+            if (!panelData) {
+                await MessageHelper.reply(e, '你还没有登录农场，请先使用 "#登录农场"', { recallTime: 20 })
+                return true
+            }
+
+            // 处理日志数据
+            const processedLogs = (panelData.logs || []).map(log => {
+                const date = new Date(log.time)
+                const tagClass = this.getLogTagClass(log.tag)
+                return {
+                    time: `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`,
+                    tag: log.tag,
+                    tagClass,
+                    message: log.message
+                }
+            })
+
+            const img = await Renderer.render('panel/logs', {
+                userName: panelData.status?.userState?.name || '未知',
+                level: panelData.status?.userState?.level || 0,
+                isRunning: panelData.isRunning,
+                harvests: panelData.status?.stats?.harvests || 0,
+                steals: panelData.status?.stats?.steals || 0,
+                helps: panelData.status?.stats?.helps || 0,
+                sells: panelData.status?.stats?.sells || 0,
+                logs: processedLogs
+            }, { scale: 1.2 })
+
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取日志面板失败:', error)
+            await MessageHelper.reply(e, `❌ 获取失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 农场土地面板
+    async farmLands(e) {
+        try {
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
+            const account = await Farm.getUserAccount(e.user_id)
+            if (!account) {
+                await MessageHelper.reply(e, '你还没有登录农场，请先使用 "#登录农场"', { recallTime: 20 })
+                return true
+            }
+
+            const [status, landsData] = await Promise.all([
+                Farm.getUserAccountStatus(e.user_id),
+                panelManager.getLands(e.user_id)
+            ])
+
+            // 处理土地数据
+            const processedLands = this.processLandsData(landsData)
+
+            const unlockedCount = processedLands.filter(l => !l.locked).length
+            const growingCount = processedLands.filter(l => l.statusClass === 'growing').length
+            const matureCount = processedLands.filter(l => l.statusClass === 'mature').length
+
+            const img = await Renderer.render('panel/lands', {
+                userName: status?.userState?.name || '未知',
+                level: status?.userState?.level || 0,
+                unlockedCount,
+                growingCount,
+                matureCount,
+                lands: processedLands
+            }, { scale: 1.2 })
+
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取土地面板失败:', error)
+            await MessageHelper.reply(e, `❌ 获取失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 农场统计面板
+    async farmStats(e) {
+        try {
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
+            const status = await Farm.getUserAccountStatus(e.user_id)
+            if (!status) {
+                await MessageHelper.reply(e, '你还没有登录农场，请先使用 "#登录农场"', { recallTime: 20 })
+                return true
+            }
+
+            const stats = status.stats || {}
+            const hasData = stats.harvests > 0 || stats.steals > 0 || stats.helps > 0
+
+            // 计算运行时间
+            let runtime = null
+            if (stats.startTime) {
+                const start = new Date(stats.startTime)
+                const now = new Date()
+                const diff = Math.floor((now - start) / 1000)
+                const hours = Math.floor(diff / 3600)
+                const minutes = Math.floor((diff % 3600) / 60)
+                runtime = {
+                    formatted: hours > 0 ? `${hours}小时${minutes}分钟` : `${minutes}分钟`,
+                    startTime: start.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                }
+            }
+
+            // 计算效率
+            let efficiency = null
+            if (runtime && stats.startTime) {
+                const start = new Date(stats.startTime)
+                const now = new Date()
+                const hours = Math.max(1, (now - start) / 3600000)
+                efficiency = {
+                    harvestsPerHour: (stats.harvests / hours).toFixed(1),
+                    stealsPerHour: (stats.steals / hours).toFixed(1),
+                    helpsPerHour: (stats.helps / hours).toFixed(1)
+                }
+            }
+
+            const img = await Renderer.render('panel/stats', {
+                userName: status.userState?.name || '未知',
+                level: status.userState?.level || 0,
+                gold: (status.userState?.gold || 0).toLocaleString(),
+                hasData,
+                harvests: stats.harvests || 0,
+                steals: stats.steals || 0,
+                helps: stats.helps || 0,
+                sells: stats.sells || 0,
+                tasks: stats.tasks || 0,
+                totalGold: ((stats.sells || 0) * 100).toLocaleString(),
+                runtime,
+                efficiency
+            }, { scale: 1.2 })
+
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取统计面板失败:', error)
+            await MessageHelper.reply(e, `❌ 获取失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 农场面板（综合）
+    async farmPanel(e) {
+        try {
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
+            const panelData = await panelManager.getUserPanelData(e.user_id)
+            if (!panelData) {
+                await MessageHelper.reply(e, '你还没有登录农场，请先使用 "#登录农场"', { recallTime: 20 })
+                return true
+            }
+
+            // 获取土地数据
+            const landsData = await panelManager.getLands(e.user_id)
+            const processedLands = this.processLandsData(landsData)
+            const matureCount = processedLands.filter(l => l.statusClass === 'mature').length
+
+            // 处理日志
+            const recentLogs = (panelData.logs || []).slice(0, 5).map(log => {
+                const date = new Date(log.time)
+                return {
+                    time: `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`,
+                    tag: log.tag,
+                    message: log.message
+                }
+            })
+
+            const img = await Renderer.render('panel/dashboard', {
+                userName: panelData.status?.userState?.name || '未知',
+                level: panelData.status?.userState?.level || 0,
+                gold: (panelData.status?.userState?.gold || 0).toLocaleString(),
+                isRunning: panelData.isRunning,
+                isConnected: panelData.isConnected,
+                harvests: panelData.status?.stats?.harvests || 0,
+                steals: panelData.status?.stats?.steals || 0,
+                helps: panelData.status?.stats?.helps || 0,
+                matureCount,
+                totalLands: processedLands.length,
+                logs: recentLogs
+            }, { scale: 1.2 })
+
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
+            }
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 获取综合面板失败:', error)
+            await MessageHelper.reply(e, `❌ 获取失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 农场操作
+    async farmAction(e) {
+        try {
+            if (await this.checkUserBanned(e)) return true
+            if (await this.checkGroupAllowed(e)) return true
+
+            const actions = [
+                { name: 'checkFarm', label: '检查农场', icon: '🌾' },
+                { name: 'sellFruits', label: '出售果实', icon: '📦' },
+                { name: 'claimTasks', label: '领取任务', icon: '📝' }
+            ]
+
+            let msg = '═══ 农场操作 ═══\n\n'
+            actions.forEach((action, idx) => {
+                msg += `${idx + 1}. ${action.icon} ${action.label}\n`
+            })
+            msg += '\n请回复序号执行操作\n'
+            msg += '或发送 "取消" 退出'
+
+            await MessageHelper.reply(e, msg, { recallTime: 30 })
+
+            // 等待用户回复
+            const reply = await this.waitReply(e, 30)
+            if (!reply || reply === '取消') {
+                await MessageHelper.reply(e, '已取消操作', { recallTime: 10 })
+                return true
+            }
+
+            const choice = parseInt(reply)
+            if (isNaN(choice) || choice < 1 || choice > actions.length) {
+                await MessageHelper.reply(e, '无效的选择', { recallTime: 10 })
+                return true
+            }
+
+            const action = actions[choice - 1]
+            await MessageHelper.tempReply(e, `正在执行: ${action.label}...`)
+
+            const result = await panelManager.executeAction(e.user_id, action.name)
+            await MessageHelper.reply(e, `✅ ${result?.message || '操作完成'}`, { recallTime: 20 })
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 执行操作失败:', error)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 辅助方法：获取日志标签样式类
+    getLogTagClass(tag) {
+        const tagMap = {
+            '农场': 'farm',
+            '好友': 'friend',
+            '系统': 'system',
+            '错误': 'error',
+            '连接': 'connection',
+            '任务': 'task',
+            '仓库': 'system',
+            '升级': 'system'
+        }
+        return tagMap[tag] || 'system'
+    }
+
+    // 辅助方法：处理土地数据
+    processLandsData(landsData) {
+        if (!landsData || !Array.isArray(landsData)) {
+            return []
+        }
+
+        const phaseNames = ['种子', '发芽', '小叶', '大叶', '开花', '成熟', '枯死']
+        const plantIcons = ['🌱', '🌿', '🌾', '🌻', '🌹', '🍎', '🥀']
+
+        return landsData.map(land => {
+            const isLocked = !land.unlocked
+            const isEmpty = !land.plant
+            const phase = land.plant?.phase || 0
+            const isMature = phase === 6
+            const isDead = phase === 7
+            const isDry = land.plant?.isDry || false
+
+            let statusClass = 'empty'
+            let statusIcon = '🌱'
+
+            if (isLocked) {
+                statusClass = 'locked'
+                statusIcon = '🔒'
+            } else if (isEmpty) {
+                statusClass = 'empty'
+                statusIcon = '🌱'
+            } else if (isDead) {
+                statusClass = 'dead'
+                statusIcon = '🥀'
+            } else if (isMature) {
+                statusClass = 'mature'
+                statusIcon = '✨'
+            } else if (isDry) {
+                statusClass = 'dry'
+                statusIcon = '💧'
+            } else {
+                statusClass = 'growing'
+                statusIcon = '🌿'
+            }
+
+            return {
+                id: land.id,
+                locked: isLocked,
+                empty: isEmpty,
+                statusClass,
+                statusIcon,
+                plantIcon: plantIcons[phase] || '🌱',
+                plantName: land.plant?.name || '空地',
+                phaseName: phaseNames[phase] || '未知',
+                progress: land.plant?.progress || 0,
+                timeText: land.plant?.remainTime || '',
+                unlockCost: land.unlockCost
+            }
+        })
+    }
+
+    // 辅助方法：等待用户回复
+    async waitReply(e, timeout = 30) {
+        const userId = e.user_id
+        const groupId = e.group_id
+        const key = groupId ? `farm:reply:${groupId}:${userId}` : `farm:reply:private:${userId}`
+
+        return new Promise((resolve) => {
+            // 设置临时监听
+            const handler = (event) => {
+                if (event.user_id !== userId) return
+                if (groupId && event.group_id !== groupId) return
+                if (!groupId && event.group_id) return
+
+                const msg = event.message?.[0]?.text || event.raw_message || ''
+                redis.del(key)
+                resolve(msg.trim())
+            }
+
+            // 存储到redis用于外部监听
+            redis.set(key, 'waiting', { EX: timeout })
+
+            // 超时处理
+            setTimeout(() => {
+                redis.del(key)
+                resolve(null)
+            }, timeout * 1000)
+        })
     }
 }

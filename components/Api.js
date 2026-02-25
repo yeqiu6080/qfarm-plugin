@@ -184,4 +184,71 @@ export default class Api {
             return null
         }
     }
+
+    // 获取账号日志
+    static async getAccountLogs(accountId, limit = 100) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/logs?limit=${limit}`))
+            return this.extractData(response)
+        } catch (error) {
+            // 旧版服务器可能没有这个API
+            return []
+        }
+    }
+
+    // 执行单次操作
+    static async executeAction(accountId, action) {
+        const response = await HttpClient.post(this.buildUrl(`/api/accounts/${accountId}/action`), { action })
+        return this.extractData(response)
+    }
+
+    // 获取所有连接状态
+    static async getAllConnections() {
+        try {
+            const response = await HttpClient.get(this.buildUrl('/api/connections'))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 获取单个账号连接状态
+    static async getAccountConnection(accountId) {
+        try {
+            const response = await HttpClient.get(this.buildUrl(`/api/accounts/${accountId}/connection`))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 清理已停止的连接
+    static async cleanupConnections() {
+        try {
+            const response = await HttpClient.post(this.buildUrl('/api/cleanup'))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 启动所有账号
+    static async startAllAccounts() {
+        try {
+            const response = await HttpClient.post(this.buildUrl('/api/start-all'))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
+
+    // 停止所有账号
+    static async stopAllAccounts() {
+        try {
+            const response = await HttpClient.post(this.buildUrl('/api/stop-all'))
+            return this.extractData(response)
+        } catch (error) {
+            return null
+        }
+    }
 }

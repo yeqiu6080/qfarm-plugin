@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>土地详情</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a472a 0%, #0d3320 100%);
+      min-height: 100vh;
+      padding: 20px;
+      width: 700px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* 顶部标题栏 */
+    .header {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      padding: 20px 24px;
+      color: white;
+      position: relative;
+    }
+    
+    .header-title {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .header-icon {
+      font-size: 26px;
+    }
+    
+    .header-subtitle {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+      margin-left: 36px;
+    }
+
+    .land-stats {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      display: flex;
+      gap: 16px;
+    }
+    
+    .land-stat {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 14px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    .land-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .land-stat-label {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    /* 土地网格 */
+    .lands-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 20px;
+    }
+    
+    .land-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .land-card:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+    
+    .land-card.locked {
+      background: rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .land-card.empty {
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+    
+    .land-card.growing {
+      border-color: rgba(34, 197, 94, 0.4);
+    }
+    
+    .land-card.mature {
+      border-color: rgba(251, 191, 36, 0.6);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+    }
+    
+    .land-card.dead {
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    
+    .land-card.dry {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+
+    .land-number {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 600;
+    }
+
+    .land-status-icon {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 16px;
+    }
+    
+    .land-content {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .land-plant-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+    
+    .land-plant-name {
+      font-size: 14px;
+      color: #e2e8f0;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .land-phase {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    
+    .land-progress {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    
+    .land-progress-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    
+    .land-progress-bar.growing {
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+    }
+    
+    .land-progress-bar.mature {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+    
+    .land-progress-bar.dead {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+    
+    .land-time {
+      font-size: 11px;
+      color: #64748b;
+    }
+    
+    .land-locked-text {
+      color: #64748b;
+      font-size: 13px;
+      margin-top: 20px;
+    }
+    
+    .land-unlock-cost {
+      font-size: 12px;
+      color: #fbbf24;
+      margin-top: 8px;
+    }
+
+    /* 图例 */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      flex-wrap: wrap;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .legend-dot.empty { background: #64748b; }
+    .legend-dot.growing { background: #22c55e; }
+    .legend-dot.mature { background: #fbbf24; }
+    .legend-dot.dead { background: #ef4444; }
+    .legend-dot.dry { background: #f59e0b; }
+    .legend-dot.locked { background: #334155; }
+
+    /* 底部 */
+    .footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 空状态 */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">
+        <span class="header-icon">🌱</span>
+        <span>土地详情</span>
+      </div>
+      <div class="header-subtitle">{{userName}} · 等级 {{level}}</div>
+      <div class="land-stats">
+        <div class="land-stat">
+          <div class="land-stat-value">{{unlockedCount}}</div>
+          <div class="land-stat-label">已解锁</div>
+        </div>
+        <div class="land-stat">
+          <div class="land-stat-value">{{growingCount}}</div>
+          <div class="land-stat-label">种植中</div>
+        </div>
+        <div class="land-stat">
+          <div class="land-stat-value">{{matureCount}}</div>
+          <div class="land-stat-label">可收获</div>
+        </div>
+      </div>
+    </div>
+    
+    {{if lands && lands.length > 0}}
+    <div class="lands-grid">
+      {{each lands land}}
+      <div class="land-card {{land.statusClass}}">
+        <div class="land-number">#{{land.id}}</div>
+        <div class="land-status-icon">{{land.statusIcon}}</div>
+        <div class="land-content">
+          {{if land.locked}}
+            <div class="land-plant-icon">🔒</div>
+            <div class="land-locked-text">未解锁</div>
+            {{if land.unlockCost}}
+            <div class="land-unlock-cost">💰 {{land.unlockCost}} 金币</div>
+            {{/if}}
+          {{else if land.empty}}
+            <div class="land-plant-icon">🌱</div>
+            <div class="land-plant-name">空地</div>
+            <div class="land-phase">等待种植</div>
+          {{else}}
+            <div class="land-plant-icon">{{land.plantIcon}}</div>
+            <div class="land-plant-name">{{land.plantName}}</div>
+            <div class="land-phase">{{land.phaseName}}</div>
+            {{if land.progress !== undefined}}
+            <div class="land-progress">
+              <div class="land-progress-bar {{land.statusClass}}" style="width: {{land.progress}}%"></div>
+            </div>
+            <div class="land-time">{{land.timeText}}</div>
+            {{/if}}
+          {{/if}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot empty"></div>
+        <span>空地</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot growing"></div>
+        <span>生长中</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot mature"></div>
+        <span>可收获</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot dry"></div>
+        <span>需浇水</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot dead"></div>
+        <span>已枯萎</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot locked"></div>
+        <span>未解锁</span>
+      </div>
+    </div>
+    {{else}}
+    <div class="empty-state">
+      <div class="empty-icon">🌾</div>
+      <div class="empty-text">暂无土地数据</div>
+    </div>
+    {{/if}}
+    
+    <div class="footer">
+      QQ农场共享版 · 共 {{lands.length}} 块土地
+    </div>
+  </div>
+</body>
+</html>

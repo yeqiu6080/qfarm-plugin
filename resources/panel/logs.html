@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>农场日志</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 20px;
+      width: 600px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* 顶部标题栏 */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px 24px;
+      color: white;
+      position: relative;
+    }
+    
+    .header-title {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .header-icon {
+      font-size: 26px;
+    }
+    
+    .header-subtitle {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+      margin-left: 36px;
+    }
+
+    .status-badge {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px #4ade80;
+    }
+    
+    .status-dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+
+    /* 统计信息 */
+    .stats-bar {
+      display: flex;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 24px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #a0aec0;
+      font-size: 13px;
+    }
+
+    .stat-icon {
+      font-size: 16px;
+    }
+
+    .stat-value {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+    
+    /* 日志列表 */
+    .logs-container {
+      padding: 16px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .log-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .log-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+    
+    .log-item.farm {
+      border-left-color: #4ade80;
+    }
+    
+    .log-item.friend {
+      border-left-color: #f472b6;
+    }
+    
+    .log-item.system {
+      border-left-color: #60a5fa;
+    }
+    
+    .log-item.error {
+      border-left-color: #ef4444;
+    }
+    
+    .log-item.connection {
+      border-left-color: #fbbf24;
+    }
+    
+    .log-item.task {
+      border-left-color: #a78bfa;
+    }
+
+    .log-time {
+      font-size: 11px;
+      color: #64748b;
+      min-width: 60px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .log-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      min-width: 50px;
+      text-align: center;
+    }
+    
+    .log-tag.farm {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+    }
+    
+    .log-tag.friend {
+      background: rgba(244, 114, 182, 0.15);
+      color: #f472b6;
+    }
+    
+    .log-tag.system {
+      background: rgba(96, 165, 250, 0.15);
+      color: #60a5fa;
+    }
+    
+    .log-tag.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+    
+    .log-tag.connection {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+    }
+    
+    .log-tag.task {
+      background: rgba(167, 139, 250, 0.15);
+      color: #a78bfa;
+    }
+    
+    .log-message {
+      flex: 1;
+      font-size: 13px;
+      color: #e2e8f0;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 14px;
+    }
+    
+    /* 底部 */
+    .footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* 滚动条 */
+    .logs-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .logs-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 3px;
+    }
+    
+    .logs-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    
+    .logs-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">
+        <span class="header-icon">📋</span>
+        <span>农场运行日志</span>
+      </div>
+      <div class="header-subtitle">{{userName}} · 等级 {{level}}</div>
+      <div class="status-badge">
+        <div class="status-dot {{isRunning ? '' : 'offline'}}"></div>
+        <span>{{isRunning ? '运行中' : '已停止'}}</span>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-icon">🌾</span>
+        <span>收获 <span class="stat-value">{{harvests}}</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">🤏</span>
+        <span>偷取 <span class="stat-value">{{steals}}</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">🤝</span>
+        <span>帮助 <span class="stat-value">{{helps}}</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">📦</span>
+        <span>出售 <span class="stat-value">{{sells}}</span></span>
+      </div>
+    </div>
+    
+    <div class="logs-container">
+      {{if logs && logs.length > 0}}
+        {{each logs log}}
+        <div class="log-item {{log.tagClass}}">
+          <div class="log-time">{{log.time}}</div>
+          <div class="log-tag {{log.tagClass}}">{{log.tag}}</div>
+          <div class="log-message">{{log.message}}</div>
+        </div>
+        {{/each}}
+      {{else}}
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">暂无日志记录</div>
+        </div>
+      {{/if}}
+    </div>
+    
+    <div class="footer">
+      QQ农场共享版 · 显示最近 {{logs.length}} 条日志
+    </div>
+  </div>
+</body>
+</html>
