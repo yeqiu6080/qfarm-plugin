@@ -702,6 +702,9 @@ export default class FarmPlugin extends plugin {
             // 添加到推送列表
             Config.addUserNotifyGroup(userId, groupId)
 
+            // 尝试启动监控（如果尚未启动）
+            await this.offlineMonitor.start()
+
             await MessageHelper.reply(e, [
                 '✅ 已开启掉线推送\n',
                 `群号: ${groupId}\n`,
@@ -740,6 +743,18 @@ export default class FarmPlugin extends plugin {
 
             // 从推送列表移除
             Config.removeUserNotifyGroup(userId, groupId)
+
+            // 检查是否还有用户开启推送，如果没有则停止监控
+            const notifyConfig = Config.getOfflineNotifyConfig()
+            const userGroups = notifyConfig.userGroups || {}
+            const hasEnabledUsers = Object.keys(userGroups).some(uid => {
+                const groups = userGroups[uid]
+                return Array.isArray(groups) && groups.length > 0
+            })
+            if (!hasEnabledUsers) {
+                this.offlineMonitor.stop()
+                logger.info('[QQ农场] 所有用户已关闭掉线推送，停止监控')
+            }
 
             await MessageHelper.reply(e, [
                 '✅ 已关闭掉线推送\n',

@@ -70,6 +70,20 @@ export default class OfflineMonitor {
             return
         }
 
+        // 检查是否有用户开启了推送功能
+        const notifyConfig = Config.getOfflineNotifyConfig()
+        const userGroups = notifyConfig.userGroups || {}
+        const hasEnabledUsers = Object.keys(userGroups).some(userId => {
+            const groups = userGroups[userId]
+            return Array.isArray(groups) && groups.length > 0
+        })
+
+        // 如果没有用户开启推送，只记录调试日志，不启动定时器
+        if (!hasEnabledUsers) {
+            logger.debug('[QQ农场] 暂无用户开启掉线推送，监控未启动')
+            return
+        }
+
         logger.info('[QQ农场] 启动掉线推送监控')
         // 每30秒检查一次状态
         this.checkInterval = setInterval(() => {
