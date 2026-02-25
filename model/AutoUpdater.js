@@ -1,5 +1,6 @@
 import { execSync } from 'child_process'
 import path from 'path'
+import fs from 'fs'
 
 /**
  * 自动更新模块
@@ -81,8 +82,7 @@ export default class AutoUpdater {
     isEnabled() {
         try {
             const configPath = path.join(this.pluginPath, 'config', 'config.json')
-            const fs = await import('fs')
-            
+
             if (!fs.existsSync(configPath)) {
                 return true // 默认启用
             }
@@ -100,9 +100,8 @@ export default class AutoUpdater {
      */
     setEnabled(enabled) {
         try {
-            const fs = require('fs')
             const configPath = path.join(this.pluginPath, 'config', 'config.json')
-            
+
             let config = {}
             if (fs.existsSync(configPath)) {
                 config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
