@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { Config, Api, Renderer } from '../components/index.js'
+import { Config, Api, Renderer, MessageHelper } from '../components/index.js'
 import { Farm, QrLogin, OfflineMonitor } from '../model/index.js'
 
 export default class FarmPlugin extends plugin {
@@ -115,7 +115,7 @@ export default class FarmPlugin extends plugin {
     // 检查用户是否被禁止
     async checkUserBanned(e) {
         if (Config.isUserBanned(e.user_id)) {
-            await e.reply('❌ 你已被禁止使用农场功能')
+            await MessageHelper.reply(e, '❌ 你已被禁止使用农场功能', { recallTime: 15 })
             return true
         }
         return false
@@ -124,7 +124,7 @@ export default class FarmPlugin extends plugin {
     // 检查群是否允许使用
     async checkGroupAllowed(e) {
         if (e.group_id && !Config.isGroupAllowed(e.group_id)) {
-            await e.reply('❌ 本群已被禁止使用农场功能')
+            await MessageHelper.reply(e, '❌ 本群已被禁止使用农场功能', { recallTime: 15 })
             return true
         }
         return false
@@ -143,19 +143,19 @@ export default class FarmPlugin extends plugin {
             const img = await this.renderStatus(e, account)
 
             if (img) {
-                await e.reply(img)
+                await MessageHelper.reply(e, img, { recallTime: 60 })
             } else {
                 // 渲染失败时发送文字
                 if (!account) {
-                    await e.reply('你还没有登录农场，请使用"#登录农场"进行登录')
+                    await MessageHelper.reply(e, '你还没有登录农场，请使用"#登录农场"进行登录', { recallTime: 30 })
                 } else {
-                    await e.reply('状态查询失败')
+                    await MessageHelper.reply(e, '状态查询失败', { recallTime: 15 })
                 }
             }
             return true
         } catch (error) {
             logger.error('[QQ农场] 查询状态失败:', error)
-            await e.reply(`查询失败: ${error.message}`)
+            await MessageHelper.reply(e, `查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -210,35 +210,35 @@ export default class FarmPlugin extends plugin {
             if (await this.checkUserBanned(e)) return true
             if (await this.checkGroupAllowed(e)) return true
 
-            await e.reply('正在获取登录链接，请稍候...')
+            await MessageHelper.tempReply(e, '正在获取登录链接，请稍候...')
 
             const result = await this.qrLogin.start(e.user_id, async (status) => {
                 if (status.success) {
-                    await e.reply([
+                    await MessageHelper.reply(e, [
                         '✅ 登录成功！\n',
                         `账号ID: ${status.account.id}\n`,
                         '已自动启动农场挂机\n',
                         '使用 "#我的农场" 查看状态'
-                    ])
+                    ], { recallTime: 30 })
                 } else {
-                    await e.reply(`❌ ${status.message}`)
+                    await MessageHelper.reply(e, `❌ ${status.message}`, { recallTime: 20 })
                 }
             })
 
             if (!result.success) {
-                await e.reply(result.message)
+                await MessageHelper.reply(e, result.message, { recallTime: 20 })
                 return true
             }
 
             // 检查返回数据
             if (!result.url) {
                 logger.error('[QQ农场] 登录返回数据异常:', result)
-                await e.reply('获取登录链接失败，请稍后重试')
+                await MessageHelper.reply(e, '获取登录链接失败，请稍后重试', { recallTime: 15 })
                 return true
             }
 
-            // 发送登录链接
-            await e.reply([
+            // 发送登录链接（重要消息，不撤回）
+            await MessageHelper.importantReply(e, [
                 '═══ QQ农场登录 ═══\n',
                 '请点击下方链接完成登录：\n\n',
                 `${result.url}\n\n`,
@@ -249,7 +249,7 @@ export default class FarmPlugin extends plugin {
             return true
         } catch (error) {
             logger.error('[QQ农场] 登录失败:', error)
-            await e.reply(`登录失败: ${error.message}`)
+            await MessageHelper.reply(e, `登录失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -264,15 +264,15 @@ export default class FarmPlugin extends plugin {
             const success = await Farm.deleteUserAccount(e.user_id)
 
             if (!success) {
-                await e.reply('你还没有登录农场')
+                await MessageHelper.reply(e, '你还没有登录农场', { recallTime: 15 })
                 return true
             }
 
-            await e.reply('✅ 已退出农场，账号已删除')
+            await MessageHelper.reply(e, '✅ 已退出农场，账号已删除', { recallTime: 20 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 退出失败:', error)
-            await e.reply(`退出失败: ${error.message}`)
+            await MessageHelper.reply(e, `退出失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -289,33 +289,33 @@ export default class FarmPlugin extends plugin {
 
             if (hasAccount) {
                 // 已登录，先退出
-                await e.reply('🔄 正在重新登录，先退出当前账号...')
+                await MessageHelper.tempReply(e, '🔄 正在重新登录，先退出当前账号...')
                 const deleted = await Farm.deleteUserAccount(e.user_id)
                 if (!deleted) {
-                    await e.reply('❌ 退出当前账号失败，请稍后重试或使用"#退出农场"后再试')
+                    await MessageHelper.reply(e, '❌ 退出当前账号失败，请稍后重试或使用"#退出农场"后再试', { recallTime: 20 })
                     return true
                 }
             }
 
             // 开始新的登录流程
-            await e.reply('正在获取登录链接，请稍候...')
+            await MessageHelper.tempReply(e, '正在获取登录链接，请稍候...')
 
             const result = await this.qrLogin.start(e.user_id, async (loginResult) => {
                 if (loginResult.success) {
                     const autoMsg = loginResult.autoEnabled ? '自动挂机已开启' : '自动挂机未开启（可在设置中开启）'
-                    await e.reply(`✅ 重新登录成功！\n🎮 ${autoMsg}\n💡 提示：使用"#我的农场"查看状态`)
+                    await MessageHelper.reply(e, `✅ 重新登录成功！\n🎮 ${autoMsg}\n💡 提示：使用"#我的农场"查看状态`, { recallTime: 30 })
                 } else {
-                    await e.reply(`❌ 重新登录失败: ${loginResult.message}`)
+                    await MessageHelper.reply(e, `❌ 重新登录失败: ${loginResult.message}`, { recallTime: 20 })
                 }
             })
 
             if (!result.success) {
-                await e.reply(`登录失败: ${result.message}`)
+                await MessageHelper.reply(e, `登录失败: ${result.message}`, { recallTime: 20 })
                 return true
             }
 
-            // 发送登录链接
-            await e.reply([
+            // 发送登录链接（重要消息，不撤回）
+            await MessageHelper.importantReply(e, [
                 '═══ QQ农场重新登录 ═══\n',
                 '请点击下方链接完成登录：\n\n',
                 `${result.url}\n\n`,
@@ -326,7 +326,7 @@ export default class FarmPlugin extends plugin {
             return true
         } catch (error) {
             logger.error('[QQ农场] 重新登录失败:', error)
-            await e.reply(`重新登录失败: ${error.message}`)
+            await MessageHelper.reply(e, `重新登录失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -341,15 +341,15 @@ export default class FarmPlugin extends plugin {
             const account = await Farm.startUserAccount(e.user_id)
 
             if (!account) {
-                await e.reply('你还没有登录农场，请先使用 "#登录农场"')
+                await MessageHelper.reply(e, '你还没有登录农场，请先使用 "#登录农场"', { recallTime: 20 })
                 return true
             }
 
-            await e.reply('✅ 自动挂机已开启')
+            await MessageHelper.reply(e, '✅ 自动挂机已开启', { recallTime: 15 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 开启自动挂机失败:', error)
-            await e.reply(`开启失败: ${error.message}`)
+            await MessageHelper.reply(e, `开启失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -364,15 +364,15 @@ export default class FarmPlugin extends plugin {
             const account = await Farm.stopUserAccount(e.user_id)
 
             if (!account) {
-                await e.reply('你还没有登录农场')
+                await MessageHelper.reply(e, '你还没有登录农场', { recallTime: 15 })
                 return true
             }
 
-            await e.reply('✅ 自动挂机已关闭')
+            await MessageHelper.reply(e, '✅ 自动挂机已关闭', { recallTime: 15 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 关闭自动挂机失败:', error)
-            await e.reply(`关闭失败: ${error.message}`)
+            await MessageHelper.reply(e, `关闭失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -380,7 +380,7 @@ export default class FarmPlugin extends plugin {
     // 设置服务器地址
     async setServer(e) {
         if (!e.isMaster) {
-            await e.reply('只有主人才能设置服务器地址')
+            await MessageHelper.reply(e, '只有主人才能设置服务器地址', { recallTime: 15 })
             return true
         }
 
@@ -394,10 +394,10 @@ export default class FarmPlugin extends plugin {
         try {
             await Api.testConnection(url)
             Config.setServerUrl(url)
-            await e.reply(`✅ 服务器地址已设置为: ${url}`)
+            await MessageHelper.reply(e, `✅ 服务器地址已设置为: ${url}`, { recallTime: 20 })
             return true
         } catch (error) {
-            await e.reply(`❌ 无法连接到服务器: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 无法连接到服务器: ${error.message}`, { recallTime: 20 })
             return true
         }
     }
@@ -434,14 +434,14 @@ export default class FarmPlugin extends plugin {
             }, { scale: 1.2 })
 
             if (img) {
-                await e.reply(img)
+                await MessageHelper.reply(e, img, { recallTime: 60 })
             } else {
-                await e.reply('图片渲染失败')
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
             }
             return true
         } catch (error) {
             logger.error('[QQ农场] 渲染设置页面失败:', error)
-            await e.reply(`渲染失败: ${error.message}`)
+            await MessageHelper.reply(e, `渲染失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -452,7 +452,7 @@ export default class FarmPlugin extends plugin {
             const accounts = await Api.getAccounts()
 
             if (accounts.length === 0) {
-                await e.reply('当前没有登录的农场账号')
+                await MessageHelper.reply(e, '当前没有登录的农场账号', { recallTime: 15 })
                 return true
             }
 
@@ -468,11 +468,11 @@ export default class FarmPlugin extends plugin {
             }
             msg += '\n══════════════════'
 
-            await e.reply(msg)
+            await MessageHelper.reply(e, msg, { recallTime: 45 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 获取账号列表失败:', error)
-            await e.reply(`获取失败: ${error.message}`)
+            await MessageHelper.reply(e, `获取失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -524,7 +524,7 @@ export default class FarmPlugin extends plugin {
             }, { scale: 1.2 })
 
             if (img) {
-                await e.reply(img)
+                await MessageHelper.reply(e, img, { recallTime: 60 })
             } else {
                 // 渲染失败时发送文字帮助
                 await this.sendTextHelp(e)
@@ -578,7 +578,7 @@ export default class FarmPlugin extends plugin {
         }
 
         msg += `═══════════════════`
-        await e.reply(msg)
+        await MessageHelper.reply(e, msg, { recallTime: 45 })
     }
 
     // 开启掉线推送
@@ -590,7 +590,7 @@ export default class FarmPlugin extends plugin {
 
             // 必须在群聊中使用
             if (!e.group) {
-                await e.reply('❌ 该指令只能在群聊中使用')
+                await MessageHelper.reply(e, '❌ 该指令只能在群聊中使用', { recallTime: 15 })
                 return true
             }
 
@@ -599,23 +599,23 @@ export default class FarmPlugin extends plugin {
 
             // 检查是否已经开启
             if (Config.isUserNotifyEnabled(userId, groupId)) {
-                await e.reply('✅ 当前群已开启掉线推送，无需重复开启')
+                await MessageHelper.reply(e, '✅ 当前群已开启掉线推送，无需重复开启', { recallTime: 15 })
                 return true
             }
 
             // 添加到推送列表
             Config.addUserNotifyGroup(userId, groupId)
 
-            await e.reply([
+            await MessageHelper.reply(e, [
                 '✅ 已开启掉线推送\n',
                 `群号: ${groupId}\n`,
                 '💡 当农场掉线时，会在此群@你提醒\n',
                 '使用 "#关闭掉线推送" 可关闭提醒'
-            ])
+            ], { recallTime: 30 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 开启掉线推送失败:', error)
-            await e.reply(`❌ 开启失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 开启失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -629,7 +629,7 @@ export default class FarmPlugin extends plugin {
 
             // 必须在群聊中使用
             if (!e.group) {
-                await e.reply('❌ 该指令只能在群聊中使用')
+                await MessageHelper.reply(e, '❌ 该指令只能在群聊中使用', { recallTime: 15 })
                 return true
             }
 
@@ -638,22 +638,22 @@ export default class FarmPlugin extends plugin {
 
             // 检查是否已经开启
             if (!Config.isUserNotifyEnabled(userId, groupId)) {
-                await e.reply('❌ 当前群未开启掉线推送')
+                await MessageHelper.reply(e, '❌ 当前群未开启掉线推送', { recallTime: 15 })
                 return true
             }
 
             // 从推送列表移除
             Config.removeUserNotifyGroup(userId, groupId)
 
-            await e.reply([
+            await MessageHelper.reply(e, [
                 '✅ 已关闭掉线推送\n',
                 `群号: ${groupId}\n`,
                 '💡 农场掉线时将不再在此群提醒'
-            ])
+            ], { recallTime: 25 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 关闭掉线推送失败:', error)
-            await e.reply(`❌ 关闭失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 关闭失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -694,11 +694,11 @@ export default class FarmPlugin extends plugin {
             }
 
             msg += '\n═══════════════════'
-            await e.reply(msg)
+            await MessageHelper.reply(e, msg, { recallTime: 40 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 查询掉线推送状态失败:', error)
-            await e.reply(`❌ 查询失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -706,7 +706,7 @@ export default class FarmPlugin extends plugin {
     // 更新插件
     async updatePlugin(e) {
         try {
-            await e.reply('🔄 正在检查并更新插件，请稍候...')
+            await MessageHelper.tempReply(e, '🔄 正在检查并更新插件，请稍候...')
 
             const { execSync } = await import('child_process')
             const pluginPath = `${process.cwd()}/plugins/qfarm-plugin`
@@ -721,20 +721,20 @@ export default class FarmPlugin extends plugin {
             const output = result.trim()
 
             if (output.includes('Already up to date') || output.includes('已经是最新')) {
-                await e.reply('✅ 插件已经是最新版本，无需更新')
+                await MessageHelper.reply(e, '✅ 插件已经是最新版本，无需更新', { recallTime: 20 })
             } else if (output.includes('Updating') || output.includes('更新')) {
-                await e.reply([
+                await MessageHelper.reply(e, [
                     '✅ 插件更新成功！\n',
                     '更新内容:\n',
                     `${output}\n\n`,
                     '💡 请重启 Yunzai-Bot 以应用更新'
-                ])
+                ], { recallTime: 45 })
             } else {
-                await e.reply([
+                await MessageHelper.reply(e, [
                     '⚠️ 更新结果:\n',
                     `${output}\n\n`,
                     '💡 如有问题请检查网络连接或手动更新'
-                ])
+                ], { recallTime: 30 })
             }
 
             return true
@@ -746,7 +746,7 @@ export default class FarmPlugin extends plugin {
             } else if (error.message.includes('network')) {
                 errorMsg = '网络连接失败，请检查网络后重试'
             }
-            await e.reply(`❌ 更新失败: ${errorMsg}`)
+            await MessageHelper.reply(e, `❌ 更新失败: ${errorMsg}`, { recallTime: 20 })
             return true
         }
     }
@@ -772,26 +772,26 @@ export default class FarmPlugin extends plugin {
             const qqParam = match?.[1]?.trim()
 
             if (!qqParam) {
-                await e.reply('❌ 请指定要下线的QQ号\n格式: 农场下线+QQ号 或 农场下线@某人')
+                await MessageHelper.reply(e, '❌ 请指定要下线的QQ号\n格式: 农场下线+QQ号 或 农场下线@某人', { recallTime: 20 })
                 return true
             }
 
             const targetQQ = this.parseQQ(qqParam)
             if (!targetQQ) {
-                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                await MessageHelper.reply(e, '❌ 无法识别的QQ号，请使用纯数字QQ号或@某人', { recallTime: 20 })
                 return true
             }
 
             // 检查是否是主人
             if (targetQQ === String(e.self_id)) {
-                await e.reply('❌ 不能对Bot自身执行此操作')
+                await MessageHelper.reply(e, '❌ 不能对Bot自身执行此操作', { recallTime: 15 })
                 return true
             }
 
             // 获取用户账号
             const account = await Farm.getUserAccount(targetQQ)
             if (!account) {
-                await e.reply(`❌ 用户 ${targetQQ} 没有登录农场`)
+                await MessageHelper.reply(e, `❌ 用户 ${targetQQ} 没有登录农场`, { recallTime: 15 })
                 return true
             }
 
@@ -799,19 +799,19 @@ export default class FarmPlugin extends plugin {
             const success = await Farm.deleteUserAccount(targetQQ)
 
             if (success) {
-                await e.reply([
+                await MessageHelper.reply(e, [
                     '✅ 已强制下线用户农场\n',
                     `用户QQ: ${targetQQ}\n`,
                     `账号ID: ${account.id}\n`,
                     `账号名: ${account.name}`
-                ])
+                ], { recallTime: 30 })
             } else {
-                await e.reply(`❌ 下线失败，用户 ${targetQQ} 可能没有登录农场`)
+                await MessageHelper.reply(e, `❌ 下线失败，用户 ${targetQQ} 可能没有登录农场`, { recallTime: 15 })
             }
             return true
         } catch (error) {
             logger.error('[QQ农场] 强制下线失败:', error)
-            await e.reply(`❌ 操作失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -823,19 +823,19 @@ export default class FarmPlugin extends plugin {
             const qqParam = match?.[1]?.trim()
 
             if (!qqParam) {
-                await e.reply('❌ 请指定要禁止的QQ号\n格式: 农场禁止+QQ号 或 农场禁止@某人')
+                await MessageHelper.reply(e, '❌ 请指定要禁止的QQ号\n格式: 农场禁止+QQ号 或 农场禁止@某人', { recallTime: 20 })
                 return true
             }
 
             const targetQQ = this.parseQQ(qqParam)
             if (!targetQQ) {
-                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                await MessageHelper.reply(e, '❌ 无法识别的QQ号，请使用纯数字QQ号或@某人', { recallTime: 20 })
                 return true
             }
 
             // 检查是否是主人
             if (targetQQ === String(e.self_id)) {
-                await e.reply('❌ 不能禁止Bot自身')
+                await MessageHelper.reply(e, '❌ 不能禁止Bot自身', { recallTime: 15 })
                 return true
             }
 
@@ -848,15 +848,15 @@ export default class FarmPlugin extends plugin {
             // 添加到禁止列表
             const isNewBan = Config.banUser(targetQQ)
 
-            await e.reply([
+            await MessageHelper.reply(e, [
                 isNewBan ? '✅ 已禁止用户使用农场' : '⚠️ 该用户已被禁止',
                 `\n用户QQ: ${targetQQ}`,
                 account ? '\n该用户的农场账号已被强制下线' : ''
-            ])
+            ], { recallTime: 30 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 禁止用户失败:', error)
-            await e.reply(`❌ 操作失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -868,13 +868,13 @@ export default class FarmPlugin extends plugin {
             const qqParam = match?.[1]?.trim()
 
             if (!qqParam) {
-                await e.reply('❌ 请指定要解禁的QQ号\n格式: 农场解禁+QQ号 或 农场解禁@某人')
+                await MessageHelper.reply(e, '❌ 请指定要解禁的QQ号\n格式: 农场解禁+QQ号 或 农场解禁@某人', { recallTime: 20 })
                 return true
             }
 
             const targetQQ = this.parseQQ(qqParam)
             if (!targetQQ) {
-                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                await MessageHelper.reply(e, '❌ 无法识别的QQ号，请使用纯数字QQ号或@某人', { recallTime: 20 })
                 return true
             }
 
@@ -882,18 +882,18 @@ export default class FarmPlugin extends plugin {
             const success = Config.unbanUser(targetQQ)
 
             if (success) {
-                await e.reply([
+                await MessageHelper.reply(e, [
                     '✅ 已解除用户禁止\n',
                     `用户QQ: ${targetQQ}\n`,
                     '该用户现在可以正常使用农场功能'
-                ])
+                ], { recallTime: 30 })
             } else {
-                await e.reply(`❌ 用户 ${targetQQ} 不在禁止列表中`)
+                await MessageHelper.reply(e, `❌ 用户 ${targetQQ} 不在禁止列表中`, { recallTime: 15 })
             }
             return true
         } catch (error) {
             logger.error('[QQ农场] 解禁用户失败:', error)
-            await e.reply(`❌ 操作失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -911,14 +911,14 @@ export default class FarmPlugin extends plugin {
 
             const targetQQ = this.parseQQ(qqParam)
             if (!targetQQ) {
-                await e.reply('❌ 无法识别的QQ号，请使用纯数字QQ号或@某人')
+                await MessageHelper.reply(e, '❌ 无法识别的QQ号，请使用纯数字QQ号或@某人', { recallTime: 20 })
                 return true
             }
 
             // 获取用户账号
             const account = await Farm.getUserAccount(targetQQ)
             if (!account) {
-                await e.reply(`❌ 用户 ${targetQQ} 没有登录农场`)
+                await MessageHelper.reply(e, `❌ 用户 ${targetQQ} 没有登录农场`, { recallTime: 15 })
                 return true
             }
 
@@ -949,11 +949,11 @@ export default class FarmPlugin extends plugin {
             }
 
             msg += '\n═══════════════════'
-            await e.reply(msg)
+            await MessageHelper.reply(e, msg, { recallTime: 45 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 查询用户状态失败:', error)
-            await e.reply(`❌ 查询失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -965,7 +965,7 @@ export default class FarmPlugin extends plugin {
             const bannedUsers = Config.getBannedUsers()
 
             if (accounts.length === 0) {
-                await e.reply('当前没有登录的农场账号')
+                await MessageHelper.reply(e, '当前没有登录的农场账号', { recallTime: 15 })
                 return true
             }
 
@@ -1003,11 +1003,11 @@ export default class FarmPlugin extends plugin {
             msg += `═══════════════════\n`
             msg += `运行中: ${runningCount}  已连接: ${connectedCount}  已禁止: ${bannedUsers.length}`
 
-            await e.reply(msg)
+            await MessageHelper.reply(e, msg, { recallTime: 50 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 获取所有状态失败:', error)
-            await e.reply(`❌ 查询失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -1024,13 +1024,13 @@ export default class FarmPlugin extends plugin {
             }
 
             if (!groupId) {
-                await e.reply('❌ 请指定群号，或在群聊中直接使用"农场允许群"')
+                await MessageHelper.reply(e, '❌ 请指定群号，或在群聊中直接使用"农场允许群"', { recallTime: 20 })
                 return true
             }
 
             // 验证群号格式
             if (!/^\d+$/.test(groupId)) {
-                await e.reply('❌ 群号格式错误，请输入纯数字群号')
+                await MessageHelper.reply(e, '❌ 群号格式错误，请输入纯数字群号', { recallTime: 15 })
                 return true
             }
 
@@ -1048,17 +1048,17 @@ export default class FarmPlugin extends plugin {
                 // 忽略错误
             }
 
-            await e.reply([
+            await MessageHelper.reply(e, [
                 isNew ? '✅ 已允许群使用农场' : '⚠️ 该群已在允许列表中',
                 `\n群号: ${groupId}`,
                 groupName ? `\n群名: ${groupName}` : '',
                 '\n\n💡 提示: 开启白名单模式后，只有允许的群才能使用农场功能',
                 '\n使用 "农场管理状态" 查看当前设置'
-            ])
+            ], { recallTime: 35 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 允许群使用失败:', error)
-            await e.reply(`❌ 操作失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -1075,13 +1075,13 @@ export default class FarmPlugin extends plugin {
             }
 
             if (!groupId) {
-                await e.reply('❌ 请指定群号，或在群聊中直接使用"农场拒绝群"')
+                await MessageHelper.reply(e, '❌ 请指定群号，或在群聊中直接使用"农场拒绝群"', { recallTime: 20 })
                 return true
             }
 
             // 验证群号格式
             if (!/^\d+$/.test(groupId)) {
-                await e.reply('❌ 群号格式错误，请输入纯数字群号')
+                await MessageHelper.reply(e, '❌ 群号格式错误，请输入纯数字群号', { recallTime: 15 })
                 return true
             }
 
@@ -1100,19 +1100,19 @@ export default class FarmPlugin extends plugin {
             }
 
             if (success) {
-                await e.reply([
+                await MessageHelper.reply(e, [
                     '✅ 已拒绝群使用农场\n',
                     `群号: ${groupId}`,
                     groupName ? `\n群名: ${groupName}` : '',
                     '\n\n该群将无法使用农场功能'
-                ])
+                ], { recallTime: 30 })
             } else {
-                await e.reply(`❌ 群 ${groupId} 不在允许列表中`)
+                await MessageHelper.reply(e, `❌ 群 ${groupId} 不在允许列表中`, { recallTime: 15 })
             }
             return true
         } catch (error) {
             logger.error('[QQ农场] 拒绝群使用失败:', error)
-            await e.reply(`❌ 操作失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 操作失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
@@ -1167,11 +1167,11 @@ export default class FarmPlugin extends plugin {
             msg += '• 农场允许群+群号 - 允许群使用\n'
             msg += '• 农场拒绝群+群号 - 拒绝群使用'
 
-            await e.reply(msg)
+            await MessageHelper.reply(e, msg, { recallTime: 50 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 获取管理状态失败:', error)
-            await e.reply(`❌ 查询失败: ${error.message}`)
+            await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
             return true
         }
     }
