@@ -964,39 +964,50 @@ export default class FarmPlugin extends plugin {
 
             // 获取用户账号
             const account = await Farm.getUserAccount(targetQQ)
+            const isBanned = Config.isUserBanned(targetQQ)
+
             if (!account) {
-                await MessageHelper.reply(e, `❌ 用户 ${targetQQ} 没有登录农场`, { recallTime: 15 })
+                // 用户未登录，渲染空状态图片
+                const img = await Renderer.render('adminStatus/index', {
+                    hasAccount: false,
+                    userId: targetQQ
+                }, { scale: 1.2 })
+
+                if (img) {
+                    await MessageHelper.importantReply(e, img)
+                } else {
+                    await MessageHelper.reply(e, `❌ 用户 ${targetQQ} 没有登录农场`, { recallTime: 15 })
+                }
                 return true
             }
 
             // 获取账号状态
             const status = await Farm.getUserAccountStatus(targetQQ)
-            const isBanned = Config.isUserBanned(targetQQ)
 
-            let msg = `═══ 用户农场状态 ═══\n\n`
-            msg += `用户QQ: ${targetQQ}\n`
-            msg += `禁止状态: ${isBanned ? '❌ 已禁止' : '✅ 正常'}\n`
-            msg += `账号ID: ${account.id}\n`
-            msg += `账号名: ${account.name}\n`
-            msg += `平台: ${account.platform}\n`
-            msg += `创建时间: ${new Date(account.createdAt).toLocaleString()}\n\n`
+            // 渲染用户状态图片
+            const img = await Renderer.render('adminStatus/index', {
+                hasAccount: true,
+                userId: targetQQ,
+                isBanned: isBanned,
+                isRunning: status?.isRunning || false,
+                isConnected: status?.isConnected || false,
+                accountId: account.id,
+                accountName: account.name,
+                platform: account.platform,
+                createdAt: new Date(account.createdAt).toLocaleString('zh-CN'),
+                hasStatus: !!status,
+                userName: status?.userState?.name || '未知',
+                level: status?.userState?.level || 0,
+                gold: (status?.userState?.gold || 0).toLocaleString(),
+                harvests: status?.stats?.harvests || 0,
+                steals: status?.stats?.steals || 0
+            }, { scale: 1.2 })
 
-            if (status) {
-                msg += `运行状态: ${status.isRunning ? '🟢 运行中' : '🔴 已停止'}\n`
-                msg += `连接状态: ${status.isConnected ? '🟢 已连接' : '🔴 未连接'}\n`
-                if (status.userState) {
-                    msg += `昵称: ${status.userState.name || '未知'}\n`
-                    msg += `等级: ${status.userState.level || 0}\n`
-                    msg += `金币: ${(status.userState.gold || 0).toLocaleString()}\n`
-                }
-                if (status.stats) {
-                    msg += `收获次数: ${status.stats.harvests || 0}\n`
-                    msg += `偷取次数: ${status.stats.steals || 0}\n`
-                }
+            if (img) {
+                await MessageHelper.importantReply(e, img)
+            } else {
+                await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
             }
-
-            msg += '\n═══════════════════'
-            await MessageHelper.reply(e, msg, { recallTime: 45 })
             return true
         } catch (error) {
             logger.error('[QQ农场] 查询用户状态失败:', error)
