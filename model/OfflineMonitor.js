@@ -17,6 +17,7 @@ export default class OfflineMonitor {
         this.accountStatusCache = {} // 缓存账号状态: { accountId: { isConnected, lastCheck } }
         this.notifiedOffline = {} // 记录已发送掉线通知的用户: { userId: boolean }
         this.disconnectStartTime = {} // 记录开始断开连接的时间: { userId: timestamp }
+        this.sendingNotify = {} // 记录正在发送通知的用户，防止并发发送: { userId: boolean }
     }
 
     // 启动监控
@@ -85,12 +86,18 @@ export default class OfflineMonitor {
                 lastCheck: Date.now()
             }
 
-            // 判断是否需要推送：之前是连接状态，现在断开
-            if (prevStatus?.isConnected === true && status.isConnected === false) {
-                // 记录开始断开的时间
-                if (!this.disconnectStartTime[userId]) {
+            // 判断是否需要推送：之前是连接状态，现在断开；或者首次检查就是断开状态
+            if (status.isConnected === false) {
+                if (prevStatus?.isConnected === true) {
+                    // 从连接变为断开，记录开始时间
+                    if (!this.disconnectStartTime[userId]) {
+                        this.disconnectStartTime[userId] = Date.now()
+                        logger.info(`[QQ农场] 用户 ${userId} 从连接变为断开，开始计时`)
+                    }
+                } else if (!prevStatus && !this.disconnectStartTime[userId]) {
+                    // 首次检查就是断开状态（可能是插件重启后），也记录开始时间
                     this.disconnectStartTime[userId] = Date.now()
-                    logger.debug(`[QQ农场] 用户 ${userId} 开始断开连接计时`)
+                    logger.info(`[QQ农场] 用户 ${userId} 首次检查即为断开状态，开始计时`)
                 }
             }
 
@@ -106,18 +113,25 @@ export default class OfflineMonitor {
                 }
             }
 
-            // 检查是否需要发送掉线通知：断开状态持续超过确认时间，且未发送过通知
-            if (status.isConnected === false && this.disconnectStartTime[userId] && !this.notifiedOffline[userId]) {
+            // 检查是否需要发送掉线通知：断开状态持续超过确认时间，且未发送过通知，且不在发送中
+            if (status.isConnected === false && this.disconnectStartTime[userId] && !this.notifiedOffline[userId] && !this.sendingNotify[userId]) {
                 const disconnectDuration = Date.now() - this.disconnectStartTime[userId]
                 const confirmDelay = 60000 // 确认延迟：60秒，避免状态抖动导致频繁推送
 
                 if (disconnectDuration >= confirmDelay) {
-                    const sent = await this.sendOfflineNotify(userId, status)
-                    // 即使因为冷却时间没有实际发送，也标记为已通知，避免重复尝试
-                    if (!sent) {
-                        this.notifiedOffline[userId] = true
-                        logger.debug(`[QQ农场] 用户 ${userId} 掉线通知因冷却时间被跳过，标记为已通知`)
+                    logger.info(`[QQ农场] 用户 ${userId} 掉线超过${confirmDelay/1000}秒，准备发送掉线通知`)
+                    this.sendingNotify[userId] = true
+                    try {
+                        const sent = await this.sendOfflineNotify(userId, status)
+                        // 只有实际发送成功后才标记为已通知
+                        if (sent) {
+                            this.notifiedOffline[userId] = true
+                        }
+                    } finally {
+                        delete this.sendingNotify[userId]
                     }
+                } else {
+                    logger.debug(`[QQ农场] 用户 ${userId} 掉线${Math.floor(disconnectDuration/1000)}秒，未满${confirmDelay/1000}秒确认延迟`)
                 }
             }
         } catch (error) {
@@ -156,6 +170,9 @@ export default class OfflineMonitor {
 
             // 向所有开启推送的群发送消息
             let sentCount = 0
+            const totalGroups = groupIds.length
+            logger.info(`[QQ农场] 用户 ${userId} 掉线通知将发送到 ${totalGroups} 个群: ${groupIds.join(', ')}`)
+            
             for (const groupId of groupIds) {
                 try {
                     // 检查Bot是否在该群中
@@ -167,6 +184,7 @@ export default class OfflineMonitor {
 
                     await group.sendMsg(msg)
                     sentCount++
+                    logger.info(`[QQ农场] 已向群 ${groupId} 发送掉线推送`)
                 } catch (err) {
                     logger.error(`[QQ农场] 向群 ${groupId} 发送掉线推送失败:`, err.message)
                 }
@@ -175,9 +193,10 @@ export default class OfflineMonitor {
             if (sentCount > 0) {
                 this.lastNotifyTime[userId] = now
                 this.notifiedOffline[userId] = true // 标记已发送掉线通知
-                logger.info(`[QQ农场] 已向用户 ${userId} 的 ${sentCount} 个群发送掉线推送`)
+                logger.info(`[QQ农场] 用户 ${userId} 掉线推送完成，成功发送 ${sentCount}/${totalGroups} 个群`)
                 return true
             }
+            logger.warn(`[QQ农场] 用户 ${userId} 掉线推送失败，未成功发送到任何群`)
             return false
         } catch (error) {
             logger.error(`[QQ农场] 发送掉线推送失败:`, error)
@@ -195,5 +214,6 @@ export default class OfflineMonitor {
         delete this.lastNotifyTime[userId]
         delete this.notifiedOffline[userId]
         delete this.disconnectStartTime[userId]
+        delete this.sendingNotify[userId]
     }
 }
