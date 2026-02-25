@@ -58,3 +58,7 @@ build/
 config/config.js
 config/*.yaml
 config/*.yml
+
+# QQ农场插件配置（用户配置，不应提交到版本控制）
+config/config.json
+plugins/qfarm-plugin/config/config.json
