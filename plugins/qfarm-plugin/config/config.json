@@ -1,0 +1,16 @@
+{
+  "serverUrl": "http://test.server.com:8080",
+  "userAutoAccounts": {},
+  "auto": {
+    "enabled": true
+  },
+  "offlineNotify": {
+    "enabled": true,
+    "userGroups": {},
+    "cooldown": 300
+  },
+  "bannedUsers": [],
+  "allowedGroups": [
+    "group_123"
+  ]
+}
