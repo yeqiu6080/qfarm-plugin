@@ -582,7 +582,7 @@ export default class FarmPlugin extends plugin {
                 helpCfg,
                 helpGroup,
                 colCount: helpCfg.columnCount || 3,
-                bg: 'bg.jpg',
+                bg: 'https://t.alcy.cc/moemp',
                 bgType: '1'
             }, { scale: 1.2 })
 
