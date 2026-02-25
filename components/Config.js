@@ -25,6 +25,10 @@ const defaultConfig = {
 }
 
 export default class Config {
+    // 配置缓存
+    static configCache = null
+    static configMtime = 0
+
     // 确保配置目录存在
     static ensureConfigDir() {
         if (!fs.existsSync(configDir)) {
@@ -32,25 +36,50 @@ export default class Config {
         }
     }
 
-    // 读取配置
+    // 读取配置（带缓存）
     static load() {
         this.ensureConfigDir()
+        
+        // 检查文件是否存在
         if (!fs.existsSync(configPath)) {
             fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2))
-            return { ...defaultConfig }
+            this.configCache = { ...defaultConfig }
+            this.configMtime = Date.now()
+            return this.configCache
         }
+
         try {
+            // 检查文件修改时间
+            const stats = fs.statSync(configPath)
+            const mtime = stats.mtimeMs
+
+            // 如果缓存有效，直接返回缓存
+            if (this.configCache && mtime === this.configMtime) {
+                return this.configCache
+            }
+
+            // 读取新配置
             const saved = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-            return { ...defaultConfig, ...saved }
+            this.configCache = { ...defaultConfig, ...saved }
+            this.configMtime = mtime
+            return this.configCache
         } catch (e) {
             return { ...defaultConfig }
         }
+    }
+
+    // 清除配置缓存（在保存后调用）
+    static clearCache() {
+        this.configCache = null
+        this.configMtime = 0
     }
 
     // 保存配置
     static save(config) {
         this.ensureConfigDir()
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2))
+        // 清除缓存，下次读取时会重新加载
+        this.clearCache()
     }
 
     // 获取服务器地址
@@ -223,5 +252,26 @@ export default class Config {
         // 如果白名单为空，表示所有群都允许
         if (allowedGroups.length === 0) return true
         return allowedGroups.includes(groupId)
+    }
+
+    // ========== 自动更新功能 ==========
+
+    // 获取自动更新配置
+    static getAutoUpdateConfig() {
+        return this.load().autoUpdate || { enabled: true }
+    }
+
+    // 设置自动更新配置
+    static setAutoUpdateConfig(autoUpdateConfig) {
+        const config = this.load()
+        config.autoUpdate = { ...config.autoUpdate, ...autoUpdateConfig }
+        this.save(config)
+    }
+
+    // 检查自动更新是否启用
+    static isAutoUpdateEnabled() {
+        const config = this.load()
+        // 默认启用
+        return config.autoUpdate?.enabled !== false
     }
 }

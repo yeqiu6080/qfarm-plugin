@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config, Api, Renderer, MessageHelper } from '../components/index.js'
-import { Farm, QrLogin, OfflineMonitor, panelManager } from '../model/index.js'
+import { Farm, QrLogin, OfflineMonitor, panelManager, AutoUpdater } from '../model/index.js'
 
 export default class FarmPlugin extends plugin {
     constructor() {
@@ -131,6 +131,10 @@ export default class FarmPlugin extends plugin {
         this.offlineMonitor.start().catch(err => {
             logger.error('[QQ农场] 启动掉线推送监控失败:', err)
         })
+
+        // 初始化自动更新（后台静默运行，默认开启）
+        this.autoUpdater = new AutoUpdater()
+        this.autoUpdater.start()
     }
 
     // 检查用户是否被禁止
