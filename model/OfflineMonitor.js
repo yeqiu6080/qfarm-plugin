@@ -13,14 +13,12 @@ export default class OfflineMonitor {
         instance = this
 
         this.checkInterval = null
+        this.cacheCleanupInterval = null
         this.lastNotifyTime = {} // 记录每个用户上次推送时间: { userId: timestamp }
         this.accountStatusCache = {} // 缓存账号状态: { accountId: { isConnected, lastCheck } }
         this.notifiedOffline = {} // 记录已发送掉线通知的用户: { userId: boolean }
         this.disconnectStartTime = {} // 记录开始断开连接的时间: { userId: timestamp }
         this.sendingNotify = {} // 记录正在发送通知的用户，防止并发发送: { userId: boolean }
-        
-        // 启动缓存清理定时器（每10分钟清理一次过期缓存）
-        this.cacheCleanupInterval = setInterval(() => this.cleanupCache(), 10 * 60 * 1000)
     }
 
     // 清理过期缓存，防止内存无限增长
@@ -89,6 +87,11 @@ export default class OfflineMonitor {
         this.checkInterval = setInterval(() => {
             this.checkAllAccounts()
         }, 30000)
+
+        // 启动缓存清理定时器（每10分钟清理一次过期缓存）
+        if (!this.cacheCleanupInterval) {
+            this.cacheCleanupInterval = setInterval(() => this.cleanupCache(), 10 * 60 * 1000)
+        }
     }
 
     // 停止监控
