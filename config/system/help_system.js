@@ -43,6 +43,11 @@ export const helpList = [
                 icon: 7,
                 title: "#重登农场",
                 desc: "退出并重新登录账号"
+            },
+            {
+                icon: 24,
+                title: "#农场帮助",
+                desc: "显示本帮助信息"
             }
         ]
     },
@@ -108,6 +113,27 @@ export const helpList = [
                 icon: 23,
                 title: "#农场操作",
                 desc: "执行手动操作"
+            }
+        ]
+    },
+    {
+        group: "Web面板",
+        auth: "master",
+        list: [
+            {
+                icon: 25,
+                title: "#开启农场面板",
+                desc: "开启Web面板访问"
+            },
+            {
+                icon: 26,
+                title: "#关闭农场面板",
+                desc: "关闭Web面板访问"
+            },
+            {
+                icon: 27,
+                title: "#农场面板状态",
+                desc: "查看面板服务状态"
             }
         ]
     },
