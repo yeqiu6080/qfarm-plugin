@@ -143,33 +143,13 @@ export default class FarmPlugin extends plugin {
 
         // 初始化掉线推送监控（机器人启动完成后再启动，避免插件加载阻塞）
         this.offlineMonitor = new OfflineMonitor()
-        // 使用 process.nextTick 确保在当前事件循环结束后执行
-        // 如果 Bot 已在线则延迟启动，否则等待 Bot 上线
-        if (Bot?.uin) {
-            // Bot 已经在线，使用更长的延迟确保启动完成
-            setTimeout(() => {
-                this.offlineMonitor.start().catch(err => {
-                    logger.error('[QQ农场] 启动掉线推送监控失败:', err)
-                })
-            }, 30000)
-        } else {
-            // Bot 尚未上线，监听上线事件
-            const startMonitor = () => {
-                setTimeout(() => {
-                    this.offlineMonitor.start().catch(err => {
-                        logger.error('[QQ农场] 启动掉线推送监控失败:', err)
-                    })
-                }, 5000)
-            }
-            // 监听 Bot 上线事件
-            Bot?.once?.('online', startMonitor)
-            // 兜底：30秒后无论如何都尝试启动
-            setTimeout(() => {
-                if (!this.offlineMonitor.checkInterval) {
-                    this.offlineMonitor.start().catch(() => {})
-                }
-            }, 35000)
-        }
+        // 延迟启动监控，确保机器人完全启动完成后再执行
+        // 使用较长的延迟，兼容单Bot和多Bot场景
+        setTimeout(() => {
+            this.offlineMonitor.start().catch(err => {
+                logger.error('[QQ农场] 启动掉线推送监控失败:', err)
+            })
+        }, 60000)
 
         // 初始化自动更新（后台静默运行，默认开启）
         this.autoUpdater = new AutoUpdater()
