@@ -21,6 +21,9 @@ const defaultConfig = {
     allowedGroups: [], // 允许使用的群列表（空数组表示所有群都允许）: [groupId1, groupId2, ...]
     autoUpdate: {
         enabled: true // 是否启用自动更新（每6小时检查一次）
+    },
+    route: {
+        enabled: true // 是否启用Web面板路由功能
     }
 }
 
@@ -273,5 +276,26 @@ export default class Config {
         const config = this.load()
         // 默认启用
         return config.autoUpdate?.enabled !== false
+    }
+
+    // ========== Web面板路由功能 ==========
+
+    // 获取路由配置
+    static getRouteConfig() {
+        return this.load().route || { enabled: true }
+    }
+
+    // 设置路由配置
+    static setRouteConfig(routeConfig) {
+        const config = this.load()
+        config.route = { ...config.route, ...routeConfig }
+        this.save(config)
+    }
+
+    // 检查路由是否启用
+    static isRouteEnabled() {
+        const config = this.load()
+        // 默认启用
+        return config.route?.enabled !== false
     }
 }

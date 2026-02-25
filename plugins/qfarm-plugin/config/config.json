@@ -12,5 +12,8 @@
   "bannedUsers": [],
   "allowedGroups": [
     "group_123"
-  ]
+  ],
+  "autoUpdate": {
+    "enabled": true
+  }
 }

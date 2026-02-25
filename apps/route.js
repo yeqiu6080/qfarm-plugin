@@ -4,6 +4,40 @@ import Farm from '../model/Farm.js'
 import { panelManager } from '../model/PanelManager.js'
 import crypto from 'crypto'
 import { BotConfig } from '../../../lib/config/config.js'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// 获取当前文件目录
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// 模板缓存
+const templateCache = new Map()
+
+// 读取模板文件
+function loadTemplate(templateName) {
+    // 检查缓存
+    if (templateCache.has(templateName)) {
+        return templateCache.get(templateName)
+    }
+    
+    const templatePath = path.join(__dirname, '..', 'templates', templateName)
+    try {
+        const content = fs.readFileSync(templatePath, 'utf8')
+        templateCache.set(templateName, content)
+        return content
+    } catch (err) {
+        logger.error(`[QQ农场路由] 加载模板失败: ${templateName}`, err)
+        return null
+    }
+}
+
+// 简单的模板替换函数
+function renderTemplate(template, data) {
+    return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        return data[key] !== undefined ? data[key] : match
+    })
 
 // 令牌管理器
 class TokenManager {
@@ -143,7 +177,17 @@ export class FarmRoute {
     // 处理路由请求
     async deal(req, res) {
         const url = req.url
-        
+
+        // 检查路由是否启用
+        if (!Config.isRouteEnabled()) {
+            if (url.startsWith('/qfarm')) {
+                res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' })
+                res.end(this.getDisabledHtml())
+                return true
+            }
+            return false
+        }
+
         // 面板页面
         if (url === '/qfarm' || url === '/qfarm/') {
             return this.renderPanel(req, res)
@@ -744,12 +788,22 @@ export class FarmRoute {
 
     // 获取错误页面HTML
     getErrorHtml(title, message) {
+        const template = loadTemplate('error.html')
+        if (!template) {
+            // 如果模板加载失败，返回简单的错误信息
+            return `<h1>${title}</h1><p>${message}</p>`
+        }
+        return renderTemplate(template, { title, message })
+    }
+
+    // 获取路由禁用页面HTML
+    getDisabledHtml() {
         return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QQ农场 - 错误</title>
+    <title>QQ农场 - 服务不可用</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -761,7 +815,7 @@ export class FarmRoute {
             justify-content: center;
             padding: 20px;
         }
-        .error-card {
+        .disabled-card {
             background: white;
             border-radius: 24px;
             padding: 40px;
@@ -770,10 +824,10 @@ export class FarmRoute {
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        .error-icon {
+        .disabled-icon {
             width: 80px;
             height: 80px;
-            background: #ffebee;
+            background: #fff3e0;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -781,15 +835,17 @@ export class FarmRoute {
             margin: 0 auto 24px;
             font-size: 40px;
         }
-        h1 { color: #c62828; font-size: 24px; margin-bottom: 12px; }
-        p { color: #666; line-height: 1.6; }
+        h1 { color: #e65100; font-size: 24px; margin-bottom: 12px; }
+        p { color: #666; line-height: 1.6; margin-bottom: 8px; }
+        .hint { color: #999; font-size: 14px; margin-top: 16px; }
     </style>
 </head>
 <body>
-    <div class="error-card">
-        <div class="error-icon">⚠️</div>
-        <h1>${title}</h1>
-        <p>${message}</p>
+    <div class="disabled-card">
+        <div class="disabled-icon">🚫</div>
+        <h1>Web面板已停用</h1>
+        <p>QQ农场Web面板功能当前已被停用</p>
+        <p class="hint">请联系Bot主人通过指令"#开启农场面板"或锅巴配置开启</p>
     </div>
 </body>
 </html>`
@@ -1841,6 +1897,12 @@ export class FarmRoutePlugin extends plugin {
     // 生成一次性通行令牌
     async generateToken(e) {
         try {
+            // 检查路由是否启用
+            if (!Config.isRouteEnabled()) {
+                await e.reply('❌ Web面板功能当前已停用，请联系主人开启', { recallMsg: 15 })
+                return true
+            }
+
             // 检查是否被禁止
             if (Config.isUserBanned(e.user_id)) {
                 await e.reply('❌ 你已被禁止使用农场功能', { recallMsg: 15 })

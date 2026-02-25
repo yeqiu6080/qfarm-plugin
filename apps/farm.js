@@ -119,6 +119,21 @@ export default class FarmPlugin extends plugin {
                 {
                     reg: '^#?(农场操作|执行操作)$',
                     fnc: 'farmAction'
+                },
+                {
+                    reg: '^#?(开启农场面板|农场面板开启)$',
+                    fnc: 'enableRoute',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?(关闭农场面板|农场面板关闭)$',
+                    fnc: 'disableRoute',
+                    permission: 'master'
+                },
+                {
+                    reg: '^#?农场面板状态$',
+                    fnc: 'routeStatus',
+                    permission: 'master'
                 }
             ]
         })
@@ -1670,5 +1685,97 @@ export default class FarmPlugin extends plugin {
                 resolve(null)
             }, timeout * 1000)
         })
+    }
+
+    // ========== Web面板路由管理 ==========
+
+    // 开启Web面板
+    async enableRoute(e) {
+        try {
+            if (!e.isMaster) {
+                await MessageHelper.reply(e, '只有主人才能开启Web面板', { recallTime: 15 })
+                return true
+            }
+
+            if (Config.isRouteEnabled()) {
+                await MessageHelper.reply(e, '✅ Web面板已经是开启状态', { recallTime: 15 })
+                return true
+            }
+
+            Config.setRouteConfig({ enabled: true })
+            await MessageHelper.reply(e, [
+                '✅ 已开启Web面板功能\n',
+                '用户现在可以通过 "#农场面板" 指令获取访问链接\n',
+                '也可以通过锅巴配置进行设置'
+            ], { recallTime: 30 })
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 开启Web面板失败:', error)
+            await MessageHelper.reply(e, `❌ 开启失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 关闭Web面板
+    async disableRoute(e) {
+        try {
+            if (!e.isMaster) {
+                await MessageHelper.reply(e, '只有主人才能关闭Web面板', { recallTime: 15 })
+                return true
+            }
+
+            if (!Config.isRouteEnabled()) {
+                await MessageHelper.reply(e, '❌ Web面板已经是关闭状态', { recallTime: 15 })
+                return true
+            }
+
+            Config.setRouteConfig({ enabled: false })
+            await MessageHelper.reply(e, [
+                '✅ 已关闭Web面板功能\n',
+                '用户将无法通过浏览器访问农场面板\n',
+                '已生成的访问令牌将失效\n',
+                '可以通过 "#开启农场面板" 重新开启'
+            ], { recallTime: 30 })
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 关闭Web面板失败:', error)
+            await MessageHelper.reply(e, `❌ 关闭失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
+    }
+
+    // 查看Web面板状态
+    async routeStatus(e) {
+        try {
+            if (!e.isMaster) {
+                await MessageHelper.reply(e, '只有主人才能查看面板状态', { recallTime: 15 })
+                return true
+            }
+
+            const isEnabled = Config.isRouteEnabled()
+            const routeConfig = Config.getRouteConfig()
+
+            let msg = '═══ Web面板状态 ═══\n\n'
+            msg += `功能状态: ${isEnabled ? '✅ 已启用' : '❌ 已停用'}\n\n`
+
+            if (isEnabled) {
+                msg += '💡 用户可以通过以下方式访问面板:\n'
+                msg += '  • 发送 "#农场面板" 获取访问链接\n'
+                msg += '  • 直接访问 /qfarm 路由\n\n'
+                msg += '⚠️ 提示: 关闭后所有现有令牌将失效'
+            } else {
+                msg += '💡 Web面板当前已停用\n'
+                msg += '用户无法通过浏览器访问面板\n\n'
+                msg += '发送 "#开启农场面板" 可重新启用'
+            }
+
+            msg += '\n═══════════════════'
+            await MessageHelper.reply(e, msg, { recallTime: 40 })
+            return true
+        } catch (error) {
+            logger.error('[QQ农场] 查看面板状态失败:', error)
+            await MessageHelper.reply(e, `❌ 查询失败: ${error.message}`, { recallTime: 15 })
+            return true
+        }
     }
 }

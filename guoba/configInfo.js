@@ -9,7 +9,8 @@ export function getConfigData() {
         offlineNotifyEnabled: config.offlineNotify?.enabled ?? true,
         offlineNotifyCooldown: config.offlineNotify?.cooldown ?? 300,
         bannedUsers: config.bannedUsers || [],
-        allowedGroups: config.allowedGroups || []
+        allowedGroups: config.allowedGroups || [],
+        routeEnabled: config.route?.enabled ?? true
     }
 }
 
@@ -45,6 +46,11 @@ export function setConfigData(data, { Result }) {
         // 允许群列表
         if (data.allowedGroups !== undefined) {
             config.allowedGroups = data.allowedGroups
+        }
+
+        // Web面板路由配置
+        if (data.routeEnabled !== undefined) {
+            config.route = { enabled: data.routeEnabled }
         }
 
         Config.save(config)
@@ -119,6 +125,17 @@ export const schemas = [
         mode: "tags",
         placeholder: "输入群号后按回车添加",
         helpMessage: "允许使用插件的群号列表（为空表示所有群都允许）"
+    },
+    {
+        component: "Divider",
+        label: "Web面板配置"
+    },
+    {
+        field: "routeEnabled",
+        label: "启用Web面板",
+        component: "Switch",
+        defaultValue: true,
+        helpMessage: "是否启用Web面板路由功能，关闭后将无法通过浏览器访问农场面板"
     }
 ]
 
