@@ -37,7 +37,7 @@ export const helpList = [
             {
                 icon: 3,
                 title: "#退出农场",
-                desc: "退出并删除账号"
+                desc: "退出并删除账号数据"
             },
             {
                 icon: 7,
@@ -92,27 +92,27 @@ export const helpList = [
             {
                 icon: 19,
                 title: "#农场面板",
-                desc: "查看综合面板"
+                desc: "查看综合面板信息"
             },
             {
                 icon: 20,
                 title: "#农场日志",
-                desc: "查看运行日志"
+                desc: "查看运行日志记录"
             },
             {
                 icon: 21,
                 title: "#农场土地",
-                desc: "查看土地详情"
+                desc: "查看土地详情状态"
             },
             {
                 icon: 22,
                 title: "#农场统计",
-                desc: "查看统计数据"
+                desc: "查看收获统计数据"
             },
             {
                 icon: 23,
                 title: "#农场操作",
-                desc: "执行手动操作"
+                desc: "执行手动农场操作"
             }
         ]
     },
@@ -132,7 +132,7 @@ export const helpList = [
             {
                 icon: 30,
                 title: "#领取任务 ID",
-                desc: "领取指定任务"
+                desc: "领取指定任务奖励"
             }
         ]
     },
@@ -142,12 +142,12 @@ export const helpList = [
             {
                 icon: 31,
                 title: "#每日奖励",
-                desc: "查看奖励状态"
+                desc: "查看每日奖励状态"
             },
             {
                 icon: 32,
                 title: "#领取奖励",
-                desc: "手动领取奖励"
+                desc: "手动领取每日奖励"
             }
         ]
     },
@@ -157,12 +157,12 @@ export const helpList = [
             {
                 icon: 33,
                 title: "#解锁土地 ID",
-                desc: "解锁指定土地"
+                desc: "解锁指定编号的土地"
             },
             {
                 icon: 34,
                 title: "#升级土地 ID",
-                desc: "升级指定土地"
+                desc: "升级指定编号的土地"
             }
         ]
     },
@@ -172,16 +172,16 @@ export const helpList = [
             {
                 icon: 35,
                 title: "#种植策略",
-                desc: "查看当前策略"
+                desc: "查看当前种植策略"
             },
             {
                 icon: 36,
                 title: "#策略列表",
-                desc: "查看可用策略"
+                desc: "查看可用策略列表"
             },
             {
                 icon: 37,
-                title: "#设置策略",
+                title: "#设置策略 名称",
                 desc: "切换种植策略"
             }
         ]
@@ -192,17 +192,17 @@ export const helpList = [
             {
                 icon: 38,
                 title: "#种植排行",
-                desc: "效率排行榜"
+                desc: "查看效率排行榜"
             },
             {
                 icon: 39,
                 title: "#种植推荐",
-                desc: "作物种植推荐"
+                desc: "获取作物种植推荐"
             },
             {
                 icon: 40,
                 title: "#种子详情 ID",
-                desc: "查看种子信息"
+                desc: "查看种子详细信息"
             }
         ]
     },
@@ -212,12 +212,12 @@ export const helpList = [
             {
                 icon: 41,
                 title: "#好友优化",
-                desc: "查看优化状态"
+                desc: "查看好友优化状态"
             },
             {
                 icon: 42,
-                title: "#设置静默",
-                desc: "设置静默时段"
+                title: "#设置静默 开始 结束",
+                desc: "设置静默时段(0-23)"
             }
         ]
     },
@@ -228,17 +228,22 @@ export const helpList = [
             {
                 icon: 25,
                 title: "#开启农场面板",
-                desc: "开启Web面板访问"
+                desc: "开启Web面板访问功能"
             },
             {
                 icon: 26,
                 title: "#关闭农场面板",
-                desc: "关闭Web面板访问"
+                desc: "关闭Web面板访问功能"
             },
             {
                 icon: 27,
                 title: "#农场面板状态",
                 desc: "查看面板服务状态"
+            },
+            {
+                icon: 45,
+                title: "#面板令牌",
+                desc: "获取面板访问令牌"
             }
         ]
     },
@@ -263,48 +268,48 @@ export const helpList = [
             },
             {
                 icon: 12,
-                title: "#农场下线+QQ",
+                title: "#农场下线 QQ",
                 desc: "强制下线指定用户"
             },
             {
                 icon: 13,
-                title: "#农场禁止+QQ",
-                desc: "禁止用户使用农场"
+                title: "#农场禁止 QQ",
+                desc: "禁止指定用户使用"
             },
             {
                 icon: 14,
-                title: "#农场解禁+QQ",
-                desc: "解除用户禁止"
+                title: "#农场解禁 QQ",
+                desc: "解除用户禁止使用"
             },
             {
                 icon: 15,
-                title: "#农场状态+QQ",
+                title: "#农场状态 QQ",
                 desc: "查看指定用户状态"
             },
             {
                 icon: 16,
-                title: "#农场允许群+群号",
-                desc: "允许群使用农场"
+                title: "#农场允许群 群号",
+                desc: "允许指定群使用"
             },
             {
                 icon: 17,
-                title: "#农场拒绝群+群号",
-                desc: "拒绝群使用农场"
+                title: "#农场拒绝群 群号",
+                desc: "拒绝指定群使用"
             },
             {
                 icon: 18,
                 title: "#农场管理状态",
-                desc: "查看管理状态"
+                desc: "查看管理状态概览"
             },
             {
                 icon: 43,
                 title: "#启动全部",
-                desc: "启动所有账号"
+                desc: "启动所有用户账号"
             },
             {
                 icon: 44,
                 title: "#停止全部",
-                desc: "停止所有账号"
+                desc: "停止所有用户账号"
             }
         ]
     }
