@@ -18,6 +18,49 @@ export default class OfflineMonitor {
         this.notifiedOffline = {} // 记录已发送掉线通知的用户: { userId: boolean }
         this.disconnectStartTime = {} // 记录开始断开连接的时间: { userId: timestamp }
         this.sendingNotify = {} // 记录正在发送通知的用户，防止并发发送: { userId: boolean }
+        
+        // 启动缓存清理定时器（每10分钟清理一次过期缓存）
+        this.cacheCleanupInterval = setInterval(() => this.cleanupCache(), 10 * 60 * 1000)
+    }
+
+    // 清理过期缓存，防止内存无限增长
+    cleanupCache() {
+        const now = Date.now()
+        const maxAge = 24 * 60 * 60 * 1000 // 24小时
+
+        // 清理lastNotifyTime中过期的记录
+        for (const userId in this.lastNotifyTime) {
+            if (now - this.lastNotifyTime[userId] > maxAge) {
+                delete this.lastNotifyTime[userId]
+            }
+        }
+
+        // 清理accountStatusCache中过期的记录
+        for (const accountId in this.accountStatusCache) {
+            const cache = this.accountStatusCache[accountId]
+            if (cache.lastCheck && now - cache.lastCheck > maxAge) {
+                delete this.accountStatusCache[accountId]
+            }
+        }
+
+        // 清理已恢复连接的用户的notifiedOffline标记
+        for (const userId in this.notifiedOffline) {
+            // 如果用户不在disconnectStartTime中，说明已恢复连接
+            if (!this.disconnectStartTime[userId]) {
+                delete this.notifiedOffline[userId]
+            }
+        }
+
+        // 清理过期的disconnectStartTime（超过1小时）
+        for (const userId in this.disconnectStartTime) {
+            if (now - this.disconnectStartTime[userId] > 60 * 60 * 1000) {
+                delete this.disconnectStartTime[userId]
+                delete this.notifiedOffline[userId]
+            }
+        }
+
+        // 清理sendingNotify中可能卡住的记录（超过5分钟）
+        // 注意：正常情况下sendingNotify会在发送完成后立即删除
     }
 
     // 启动监控
@@ -40,6 +83,10 @@ export default class OfflineMonitor {
             clearInterval(this.checkInterval)
             this.checkInterval = null
             logger.info('[QQ农场] 停止掉线推送监控')
+        }
+        if (this.cacheCleanupInterval) {
+            clearInterval(this.cacheCleanupInterval)
+            this.cacheCleanupInterval = null
         }
     }
 

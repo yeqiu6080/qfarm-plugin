@@ -32,6 +32,8 @@ export default class PanelManager {
 
                 this.ws.onopen = () => {
                     this.isConnected = true
+                    // 重置重连计数器
+                    this.reconnectAttempts = 0
                     logger.debug('[QQ农场面板] WebSocket已连接')
                     this.startHeartbeat()
                     resolve(true)
@@ -109,14 +111,25 @@ export default class PanelManager {
     }
 
     /**
-     * 计划重连
+     * 计划重连（带指数退避策略）
      */
     scheduleReconnect() {
         if (this.reconnectTimer) return
+        
+        // 增加重连次数
+        this.reconnectAttempts = (this.reconnectAttempts || 0) + 1
+        
+        // 指数退避：5秒 -> 10秒 -> 20秒 -> 40秒 -> 60秒（最大）
+        const baseDelay = 5000
+        const maxDelay = 60000
+        const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempts - 1), maxDelay)
+        
+        logger.debug(`[QQ农场面板] 计划${delay/1000}秒后重连（第${this.reconnectAttempts}次）`)
+        
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null
             this.connect().catch(() => {})
-        }, 5000)
+        }, delay)
     }
 
     /**

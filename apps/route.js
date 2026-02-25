@@ -11,6 +11,18 @@ class TokenManager {
         this.tokens = new Map() // token -> { userId, role, createdAt, used }
         this.sessionTokens = new Map() // sessionToken -> { userId, role, createdAt } (长期有效)
         this.cleanupInterval = setInterval(() => this.cleanup(), 60000) // 每分钟清理过期令牌
+        this.isDestroyed = false
+    }
+
+    // 销毁方法，清理定时器防止内存泄漏
+    destroy() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval)
+            this.cleanupInterval = null
+        }
+        this.isDestroyed = true
+        this.tokens.clear()
+        this.sessionTokens.clear()
     }
 
     // 生成临时令牌（用于初始登录）

@@ -4,6 +4,37 @@ import Farm from './Farm.js'
 export default class QrLogin {
     constructor() {
         this.sessions = new Map() // userId -> { sessionId, startTime, isProcessing }
+        this.sessionTimeout = 10 * 60 * 1000 // 10分钟超时
+        
+        // 启动会话清理定时器（每5分钟清理一次过期会话）
+        this.cleanupInterval = setInterval(() => this.cleanupExpiredSessions(), 5 * 60 * 1000)
+    }
+
+    // 清理过期会话，防止内存泄漏
+    cleanupExpiredSessions() {
+        const now = Date.now()
+        let cleanedCount = 0
+        
+        for (const [userId, session] of this.sessions) {
+            if (now - session.startTime > this.sessionTimeout) {
+                this.sessions.delete(userId)
+                cleanedCount++
+                logger.debug(`[QQ农场] 清理过期登录会话: ${userId}`)
+            }
+        }
+        
+        if (cleanedCount > 0) {
+            logger.info(`[QQ农场] 清理了 ${cleanedCount} 个过期登录会话`)
+        }
+    }
+
+    // 销毁方法，清理定时器
+    destroy() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval)
+            this.cleanupInterval = null
+        }
+        this.sessions.clear()
     }
 
     // 开始扫码登录

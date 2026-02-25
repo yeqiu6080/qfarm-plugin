@@ -487,24 +487,26 @@ export default class FarmPlugin extends plugin {
             let runningCount = 0
             let bannedCount = 0
 
-            for (const account of accounts) {
+            // 预编译正则表达式，避免循环中重复编译
+            const userKeyRegex1 = /^(?:user_|qq_)(\d+)_/
+            const userKeyRegex2 = /^(?:user_|qq_)(\d+)$/
+
+            // 并行获取所有账号状态，提高性能
+            const accountPromises = accounts.map(async (account) => {
                 // 从账号名提取QQ号
-                const userKey = account.name.match(/^(?:user_|qq_)(\d+)_/)?.[1] ||
-                               account.name.match(/^(?:user_|qq_)(\d+)$/)?.[1]
+                const userKey = account.name.match(userKeyRegex1)?.[1] ||
+                               account.name.match(userKeyRegex2)?.[1]
                 const userId = userKey || '未知'
                 const isBanned = userKey ? bannedUsers.includes(userKey) : false
 
                 let status = { isRunning: false, isConnected: false, level: 0, gold: 0 }
                 try {
                     status = await Api.getAccountStatus(account.id)
-                    if (status?.isRunning) runningCount++
                 } catch (err) {
-                    // 忽略查询失败
+                    // 忽略查询失败，使用默认状态
                 }
 
-                if (isBanned) bannedCount++
-
-                accountList.push({
+                return {
                     id: account.id,
                     name: account.name,
                     userId: userId,
@@ -519,8 +521,20 @@ export default class FarmPlugin extends plugin {
                     isConnected: status?.isConnected || false,
                     level: status?.userState?.level || 0,
                     gold: (status?.userState?.gold || 0).toLocaleString(),
-                    isBanned: isBanned
-                })
+                    isBanned: isBanned,
+                    _isRunning: status?.isRunning || false // 用于计数
+                }
+            })
+
+            // 等待所有账号状态获取完成
+            const accountResults = await Promise.all(accountPromises)
+
+            // 统计计数
+            for (const acc of accountResults) {
+                if (acc._isRunning) runningCount++
+                if (acc.isBanned) bannedCount++
+                delete acc._isRunning // 删除临时字段
+                accountList.push(acc)
             }
 
             // 渲染账号列表图片
@@ -1052,39 +1066,71 @@ export default class FarmPlugin extends plugin {
                 return true
             }
 
-            let msg = `═══ 农场账号总览 [共${accounts.length}个] ═══\n\n`
+            // 预编译正则表达式
+            const userKeyRegex1 = /^(?:user_|qq_)(\d+)_/
+            const userKeyRegex2 = /^(?:user_|qq_)(\d+)$/
 
-            let runningCount = 0
-            let connectedCount = 0
-
-            for (const account of accounts) {
+            // 并行获取所有账号状态
+            const accountPromises = accounts.map(async (account) => {
                 // 尝试从账号名提取QQ号
-                const userKey = account.name.match(/^(?:user_|qq_)(\d+)_/)?.[1] ||
-                               account.name.match(/^(?:user_|qq_)(\d+)$/)?.[1]
+                const userKey = account.name.match(userKeyRegex1)?.[1] ||
+                               account.name.match(userKeyRegex2)?.[1]
                 const isBanned = userKey ? bannedUsers.includes(userKey) : false
 
                 try {
                     const status = await Api.getAccountStatus(account.id)
+                    return {
+                        account,
+                        userKey,
+                        isBanned,
+                        status,
+                        success: true
+                    }
+                } catch (err) {
+                    return {
+                        account,
+                        userKey,
+                        isBanned,
+                        status: null,
+                        success: false
+                    }
+                }
+            })
+
+            const results = await Promise.all(accountPromises)
+
+            // 使用数组收集消息行，最后join（比字符串拼接更高效）
+            const msgLines = [`═══ 农场账号总览 [共${accounts.length}个] ═══`, '']
+            let runningCount = 0
+            let connectedCount = 0
+
+            for (const result of results) {
+                const { account, userKey, isBanned, status, success } = result
+
+                if (success && status) {
                     if (status?.isRunning) runningCount++
                     if (status?.isConnected) connectedCount++
 
-                    msg += `ID: ${account.id}\n`
-                    msg += `名称: ${account.name}\n`
-                    if (userKey) msg += `用户: ${userKey}${isBanned ? ' (已禁止)' : ''}\n`
-                    msg += `状态: ${status?.isRunning ? '🟢' : '🔴'}运行 ${status?.isConnected ? '🟢' : '🔴'}连接\n`
+                    msgLines.push(`ID: ${account.id}`)
+                    msgLines.push(`名称: ${account.name}`)
+                    if (userKey) msgLines.push(`用户: ${userKey}${isBanned ? ' (已禁止)' : ''}`)
+                    msgLines.push(`状态: ${status?.isRunning ? '🟢' : '🔴'}运行 ${status?.isConnected ? '🟢' : '🔴'}连接`)
                     if (status?.userState?.level) {
-                        msg += `等级: ${status.userState.level} 金币: ${(status.userState.gold || 0).toLocaleString()}\n`
+                        msgLines.push(`等级: ${status.userState.level} 金币: ${(status.userState.gold || 0).toLocaleString()}`)
                     }
-                    msg += '\n'
-                } catch (err) {
-                    msg += `ID: ${account.id}\n`
-                    msg += `名称: ${account.name}\n`
-                    msg += `状态: ⚠️ 查询失败\n\n`
+                    msgLines.push('')
+                } else {
+                    msgLines.push(`ID: ${account.id}`)
+                    msgLines.push(`名称: ${account.name}`)
+                    msgLines.push(`状态: ⚠️ 查询失败`)
+                    msgLines.push('')
                 }
             }
 
-            msg += `═══════════════════\n`
-            msg += `运行中: ${runningCount}  已连接: ${connectedCount}  已禁止: ${bannedUsers.length}`
+            msgLines.push('═══════════════════')
+            msgLines.push(`运行中: ${runningCount}  已连接: ${connectedCount}  已禁止: ${bannedUsers.length}`)
+
+            const msg = msgLines.join('\n')
 
             await MessageHelper.reply(e, msg, { recallTime: 50 })
             return true
