@@ -18,7 +18,10 @@ const defaultConfig = {
         cooldown: 300 // 推送冷却时间（秒），避免频繁推送
     },
     bannedUsers: [], // 被禁止使用的用户列表: [userId1, userId2, ...]
-    allowedGroups: [] // 允许使用的群列表（空数组表示所有群都允许）: [groupId1, groupId2, ...]
+    allowedGroups: [], // 允许使用的群列表（空数组表示所有群都允许）: [groupId1, groupId2, ...]
+    autoUpdate: {
+        enabled: true // 是否启用自动更新（每6小时检查一次）
+    }
 }
 
 export default class Config {
