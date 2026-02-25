@@ -143,7 +143,7 @@ export default class FarmPlugin extends plugin {
             const img = await this.renderStatus(e, account)
 
             if (img) {
-                await MessageHelper.reply(e, img, { recallTime: 60 })
+                await MessageHelper.reply(e, img, { recallTime: 120 })
             } else {
                 // 渲染失败时发送文字
                 if (!account) {
@@ -237,14 +237,14 @@ export default class FarmPlugin extends plugin {
                 return true
             }
 
-            // 发送登录链接（重要消息，不撤回）
-            await MessageHelper.importantReply(e, [
+            // 发送登录链接（3分钟后自动撤回，因为链接有效期只有3分钟）
+            await MessageHelper.reply(e, [
                 '═══ QQ农场登录 ═══\n',
                 '请点击下方链接完成登录：\n\n',
                 `${result.url}\n\n`,
                 '⏰ 有效期3分钟，请尽快点击登录\n',
                 '💡 提示：请确保使用手机QQ点击链接'
-            ])
+            ], { recallTime: 180 })
 
             return true
         } catch (error) {
@@ -314,14 +314,14 @@ export default class FarmPlugin extends plugin {
                 return true
             }
 
-            // 发送登录链接（重要消息，不撤回）
-            await MessageHelper.importantReply(e, [
+            // 发送登录链接（3分钟后自动撤回，因为链接有效期只有3分钟）
+            await MessageHelper.reply(e, [
                 '═══ QQ农场重新登录 ═══\n',
                 '请点击下方链接完成登录：\n\n',
                 `${result.url}\n\n`,
                 '⏰ 有效期3分钟，请尽快点击登录\n',
                 '💡 提示：请确保使用手机QQ点击链接'
-            ])
+            ], { recallTime: 180 })
 
             return true
         } catch (error) {
@@ -434,7 +434,7 @@ export default class FarmPlugin extends plugin {
             }, { scale: 1.2 })
 
             if (img) {
-                await MessageHelper.reply(e, img, { recallTime: 60 })
+                await MessageHelper.reply(e, img, { recallTime: 120 })
             } else {
                 await MessageHelper.reply(e, '图片渲染失败', { recallTime: 15 })
             }
@@ -524,7 +524,7 @@ export default class FarmPlugin extends plugin {
             }, { scale: 1.2 })
 
             if (img) {
-                await MessageHelper.reply(e, img, { recallTime: 60 })
+                await MessageHelper.reply(e, img, { recallTime: 180 })
             } else {
                 // 渲染失败时发送文字帮助
                 await this.sendTextHelp(e)
