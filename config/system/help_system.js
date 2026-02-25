@@ -206,6 +206,8 @@ export const helpList = [
             }
         ]
     },
+    // Web面板功能已隐藏
+    /*
     {
         group: "Web面板",
         list: [
@@ -236,6 +238,7 @@ export const helpList = [
             }
         ]
     },
+    */
     {
         group: "主人指令",
         auth: "master",
