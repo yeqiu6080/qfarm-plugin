@@ -12,181 +12,224 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a472a 0%, #0d3320 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a4a2a 0%, #0d3d1a 50%, #1a3a2a 100%);
       min-height: 100vh;
       padding: 20px;
-      width: 700px;
+      width: 750px;
     }
 
     .container {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 28px;
       overflow: hidden;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
     
     /* 顶部标题栏 */
     .header {
-      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-      padding: 20px 24px;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+      padding: 28px 24px;
       color: white;
       position: relative;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      border-radius: 50%;
     }
     
     .header-title {
-      font-size: 22px;
-      font-weight: 600;
+      font-size: 26px;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
     }
     
     .header-icon {
-      font-size: 26px;
+      font-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
     
     .header-subtitle {
-      font-size: 13px;
-      opacity: 0.85;
-      margin-top: 4px;
-      margin-left: 36px;
+      font-size: 14px;
+      opacity: 0.9;
+      margin-top: 6px;
+      margin-left: 44px;
+      position: relative;
+      z-index: 1;
     }
 
     .land-stats {
       position: absolute;
-      top: 20px;
+      top: 24px;
       right: 24px;
       display: flex;
-      gap: 16px;
+      gap: 12px;
+      z-index: 1;
     }
     
     .land-stat {
       background: rgba(255, 255, 255, 0.2);
-      padding: 8px 14px;
-      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      border-radius: 16px;
       text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      min-width: 70px;
     }
     
     .land-stat-value {
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 20px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
     .land-stat-label {
       font-size: 11px;
       opacity: 0.9;
+      margin-top: 2px;
+      font-weight: 500;
     }
 
     /* 土地网格 */
     .lands-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      padding: 20px;
+      gap: 16px;
+      padding: 24px;
     }
     
     .land-card {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border-radius: 20px;
+      padding: 20px;
       border: 2px solid transparent;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
     }
     
     .land-card:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-2px);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
     
     .land-card.locked {
-      background: rgba(0, 0, 0, 0.2);
-      border-color: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.15) 100%);
+      border-color: rgba(100, 116, 139, 0.4);
     }
     
     .land-card.empty {
-      border-color: rgba(148, 163, 184, 0.3);
+      border-color: rgba(148, 163, 184, 0.4);
     }
     
     .land-card.growing {
-      border-color: rgba(34, 197, 94, 0.4);
+      border-color: rgba(34, 197, 94, 0.5);
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.15);
     }
     
     .land-card.mature {
-      border-color: rgba(251, 191, 36, 0.6);
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.7);
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 191, 36, 0.05) 100%);
+      box-shadow: 0 4px 25px rgba(251, 191, 36, 0.25);
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { box-shadow: 0 4px 25px rgba(251, 191, 36, 0.25); }
+      to { box-shadow: 0 4px 35px rgba(251, 191, 36, 0.4); }
     }
     
     .land-card.dead {
-      border-color: rgba(239, 68, 68, 0.4);
+      border-color: rgba(239, 68, 68, 0.5);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
     }
     
     .land-card.dry {
-      border-color: rgba(245, 158, 11, 0.4);
+      border-color: rgba(245, 158, 11, 0.5);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
     }
 
     .land-number {
       position: absolute;
-      top: 8px;
-      left: 12px;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.4);
-      font-weight: 600;
+      top: 10px;
+      left: 14px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 700;
     }
 
     .land-status-icon {
       position: absolute;
-      top: 8px;
-      right: 12px;
-      font-size: 16px;
+      top: 10px;
+      right: 14px;
+      font-size: 18px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
     
     .land-content {
-      margin-top: 20px;
+      margin-top: 24px;
       text-align: center;
     }
     
     .land-plant-icon {
-      font-size: 40px;
-      margin-bottom: 8px;
+      font-size: 44px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
     
     .land-plant-name {
-      font-size: 14px;
-      color: #e2e8f0;
-      font-weight: 500;
-      margin-bottom: 4px;
+      font-size: 15px;
+      color: #f0fdf4;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
     
     .land-phase {
       font-size: 12px;
-      color: #94a3b8;
-      margin-bottom: 8px;
+      color: #86efac;
+      margin-bottom: 10px;
+      font-weight: 500;
     }
     
     .land-progress {
-      height: 6px;
+      height: 8px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
+      border-radius: 4px;
       overflow: hidden;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     
     .land-progress-bar {
       height: 100%;
-      border-radius: 3px;
-      transition: width 0.3s ease;
+      border-radius: 4px;
+      transition: width 0.5s ease;
     }
     
     .land-progress-bar.growing {
       background: linear-gradient(90deg, #22c55e, #4ade80);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
     }
     
     .land-progress-bar.mature {
       background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
     }
     
     .land-progress-bar.dead {
@@ -194,78 +237,123 @@
     }
     
     .land-time {
-      font-size: 11px;
+      font-size: 12px;
       color: #64748b;
+      font-weight: 500;
     }
     
     .land-locked-text {
       color: #64748b;
-      font-size: 13px;
-      margin-top: 20px;
+      font-size: 14px;
+      margin-top: 24px;
+      font-weight: 500;
     }
     
     .land-unlock-cost {
-      font-size: 12px;
+      font-size: 13px;
       color: #fbbf24;
-      margin-top: 8px;
+      margin-top: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
 
     /* 图例 */
     .legend {
       display: flex;
       justify-content: center;
-      gap: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 24px;
+      padding: 20px 24px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       flex-wrap: wrap;
     }
     
     .legend-item {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 12px;
+      gap: 8px;
+      font-size: 13px;
       color: #94a3b8;
+      font-weight: 500;
     }
     
     .legend-dot {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
     }
     
-    .legend-dot.empty { background: #64748b; }
-    .legend-dot.growing { background: #22c55e; }
-    .legend-dot.mature { background: #fbbf24; }
-    .legend-dot.dead { background: #ef4444; }
-    .legend-dot.dry { background: #f59e0b; }
-    .legend-dot.locked { background: #334155; }
+    .legend-dot.empty { background: #64748b; color: #64748b; }
+    .legend-dot.growing { background: #22c55e; color: #22c55e; }
+    .legend-dot.mature { background: #fbbf24; color: #fbbf24; }
+    .legend-dot.dead { background: #ef4444; color: #ef4444; }
+    .legend-dot.dry { background: #f59e0b; color: #f59e0b; }
+    .legend-dot.locked { background: #334155; color: #334155; }
 
     /* 底部 */
     .footer {
-      padding: 16px;
+      padding: 20px;
       text-align: center;
       font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      color: #4ade80;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.15);
     }
 
     /* 空状态 */
     .empty-state {
-      padding: 60px 20px;
+      padding: 70px 20px;
       text-align: center;
       color: #64748b;
     }
 
     .empty-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
+      font-size: 56px;
+      margin-bottom: 20px;
+      opacity: 0.6;
     }
 
     .empty-text {
-      font-size: 14px;
+      font-size: 15px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* 统计摘要 */
+    .summary-section {
+      padding: 20px 24px 0;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .summary-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .summary-value {
+      font-size: 20px;
+      font-weight: 800;
+      color: #f0fdf4;
+      margin-bottom: 4px;
+    }
+
+    .summary-label {
+      font-size: 11px;
+      color: #86efac;
+      font-weight: 500;
     }
   </style>
 </head>
@@ -304,7 +392,10 @@
             <div class="land-plant-icon">🔒</div>
             <div class="land-locked-text">未解锁</div>
             {{if land.unlockCost}}
-            <div class="land-unlock-cost">💰 {{land.unlockCost}} 金币</div>
+            <div class="land-unlock-cost">
+              <span>💰</span>
+              <span>{{land.unlockCost}} 金币</span>
+            </div>
             {{/if}}
           {{else if land.empty}}
             <div class="land-plant-icon">🌱</div>

@@ -12,46 +12,66 @@
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a3a4a 0%, #0d2d3a 50%, #1a2a3a 100%);
       min-height: 100vh;
       padding: 20px;
-      width: 600px;
+      width: 650px;
     }
 
     .container {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 28px;
       overflow: hidden;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     }
     
     /* 顶部标题栏 */
     .header {
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      padding: 24px;
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%);
+      padding: 28px 24px;
       color: white;
       position: relative;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      border-radius: 50%;
     }
     
     .header-title {
-      font-size: 24px;
-      font-weight: 600;
+      font-size: 26px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 12px;
+      position: relative;
+      z-index: 1;
     }
     
     .header-icon {
       font-size: 32px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
     
     .header-subtitle {
       font-size: 14px;
-      opacity: 0.85;
+      opacity: 0.9;
       margin-top: 6px;
       margin-left: 44px;
+      position: relative;
+      z-index: 1;
     }
 
     /* 主要统计 */
@@ -59,21 +79,23 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      padding: 20px;
+      padding: 24px;
     }
     
     .stat-card {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 20px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border-radius: 20px;
+      padding: 24px;
       position: relative;
       overflow: hidden;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .stat-card:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-2px);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.2);
     }
     
     .stat-card::before {
@@ -82,7 +104,7 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
+      height: 4px;
       background: linear-gradient(90deg, var(--accent-color), transparent);
     }
     
@@ -94,60 +116,67 @@
     .stat-card.gold { --accent-color: #f59e0b; }
     
     .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      margin-bottom: 12px;
+      font-size: 28px;
+      margin-bottom: 16px;
       background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
     
-    .stat-card.harvest .stat-icon { background: rgba(34, 197, 94, 0.2); }
-    .stat-card.steal .stat-icon { background: rgba(244, 114, 182, 0.2); }
-    .stat-card.help .stat-icon { background: rgba(96, 165, 250, 0.2); }
-    .stat-card.sell .stat-icon { background: rgba(251, 191, 36, 0.2); }
-    .stat-card.task .stat-icon { background: rgba(167, 139, 250, 0.2); }
-    .stat-card.gold .stat-icon { background: rgba(245, 158, 11, 0.2); }
+    .stat-card.harvest .stat-icon { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.3); }
+    .stat-card.steal .stat-icon { background: rgba(244, 114, 182, 0.2); border-color: rgba(244, 114, 182, 0.3); }
+    .stat-card.help .stat-icon { background: rgba(96, 165, 250, 0.2); border-color: rgba(96, 165, 250, 0.3); }
+    .stat-card.sell .stat-icon { background: rgba(251, 191, 36, 0.2); border-color: rgba(251, 191, 36, 0.3); }
+    .stat-card.task .stat-icon { background: rgba(167, 139, 250, 0.2); border-color: rgba(167, 139, 250, 0.3); }
+    .stat-card.gold .stat-icon { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.3); }
     
     .stat-value {
-      font-size: 28px;
-      font-weight: 700;
-      color: #f1f5f9;
-      margin-bottom: 4px;
+      font-size: 32px;
+      font-weight: 800;
+      color: #f0fdf4;
+      margin-bottom: 6px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
     .stat-label {
       font-size: 13px;
       color: #94a3b8;
+      font-weight: 500;
     }
 
     /* 运行时间 */
     .runtime-section {
-      padding: 0 20px 20px;
+      padding: 0 24px 20px;
     }
     
     .runtime-card {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
-      border-radius: 16px;
-      padding: 20px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
+      border-radius: 20px;
+      padding: 24px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 20px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
     }
     
     .runtime-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.1);
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
     
     .runtime-info {
@@ -157,84 +186,145 @@
     .runtime-label {
       font-size: 13px;
       color: #94a3b8;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      font-weight: 500;
     }
     
     .runtime-value {
-      font-size: 20px;
-      font-weight: 600;
-      color: #f1f5f9;
+      font-size: 24px;
+      font-weight: 700;
+      color: #f0fdf4;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
     .runtime-detail {
-      font-size: 12px;
+      font-size: 13px;
       color: #64748b;
-      margin-top: 4px;
+      margin-top: 6px;
+      font-weight: 500;
     }
 
     /* 效率统计 */
     .efficiency-section {
-      padding: 0 20px 20px;
+      padding: 0 24px 20px;
     }
     
     .section-title {
       font-size: 14px;
       color: #94a3b8;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
       gap: 8px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
     
     .efficiency-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 14px;
     }
     
     .efficiency-item {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border-radius: 16px;
+      padding: 20px;
       text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .efficiency-item:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
     
     .efficiency-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #f1f5f9;
-      margin-bottom: 4px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #f0fdf4;
+      margin-bottom: 6px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
     
     .efficiency-label {
       font-size: 12px;
       color: #64748b;
+      font-weight: 500;
     }
 
     /* 底部 */
     .footer {
-      padding: 16px;
+      padding: 20px;
       text-align: center;
       font-size: 12px;
-      color: #64748b;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      color: #60a5fa;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.15);
     }
 
     /* 空状态 */
     .empty-state {
-      padding: 60px 20px;
+      padding: 70px 20px;
       text-align: center;
       color: #64748b;
     }
 
     .empty-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
+      font-size: 56px;
+      margin-bottom: 20px;
+      opacity: 0.6;
     }
 
     .empty-text {
-      font-size: 14px;
+      font-size: 16px;
+      color: #94a3b8;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .empty-hint {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* 成就徽章 */
+    .achievements-section {
+      padding: 0 24px 20px;
+    }
+
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .achievement-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .achievement-item:hover {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .achievement-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .achievement-name {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
     }
   </style>
 </head>
@@ -326,7 +416,7 @@
     <div class="empty-state">
       <div class="empty-icon">📈</div>
       <div class="empty-text">暂无统计数据</div>
-      <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">启动农场挂机后将开始统计</div>
+      <div class="empty-hint">启动农场挂机后将开始统计</div>
     </div>
     {{/if}}
     
