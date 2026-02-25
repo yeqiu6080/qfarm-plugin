@@ -3,7 +3,7 @@ import { Config, Api } from '../components/index.js'
 import Farm from '../model/Farm.js'
 import { panelManager } from '../model/PanelManager.js'
 import crypto from 'crypto'
-import { BotConfig } from '../../../lib/config/config.js'
+import cfg from '../../../lib/config/config.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -129,8 +129,14 @@ class TokenManager {
 
     // 检查是否是主人
     isMaster(userId) {
-        const masters = Array.isArray(BotConfig.master) ? BotConfig.master : [BotConfig.master]
-        return masters.includes(String(userId))
+        // cfg.master 是对象格式: { bot_id: [user_id1, user_id2, ...] }
+        const masters = cfg.master
+        for (const botId in masters) {
+            if (masters[botId].includes(String(userId))) {
+                return true
+            }
+        }
+        return false
     }
 
     // 获取用户列表（仅主人可用）
@@ -173,6 +179,8 @@ export class FarmRoute {
     constructor() {
         this.id = 'qfarm'
         this.name = 'QQ农场路由'
+        // 添加空的 task 属性，避免被 Yunzai loader 误加载时报错
+        this.task = []
     }
 
     // 处理路由请求
